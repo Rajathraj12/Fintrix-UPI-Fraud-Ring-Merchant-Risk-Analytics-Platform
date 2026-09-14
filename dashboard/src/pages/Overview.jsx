@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useData } from '../context/DataContext';
+import AdvanceReceiptPrinter from '../components/AdvanceReceiptPrinter';
 
 const fmt = (n) => n >= 1e7 ? `${(n/1e7).toFixed(2)}Cr` : n >= 1e5 ? `${(n/1e5).toFixed(2)}L` : n >= 1e3 ? `${(n/1e3).toFixed(1)}K` : String(Math.round(n));
 const pct = (n, d) => d === 0 ? '0.0%' : `${((n/d)*100).toFixed(1)}%`;
@@ -484,6 +485,12 @@ export default function Overview({ onNavigate }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Advance Receipt Print Animation: Slide-down thermal audit slip */}
+      <AdvanceReceiptPrinter
+        data={{ txns, cb, merchants, kyc, totalVol, disputedAmt, activeMerchants }}
+        onNavigate={onNavigate}
+      />
+
       {/* 1. Grand Hero KPI Container with Lime Payout Widget & Timeline */}
       <div className="hero-kpi-card">
         {/* Col 1: Overdue / Disputed Amount */}
