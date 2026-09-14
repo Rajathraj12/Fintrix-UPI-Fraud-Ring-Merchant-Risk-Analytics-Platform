@@ -485,218 +485,178 @@ export default function Overview({ onNavigate }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Advance Receipt Print Animation: Slide-down thermal audit slip */}
-      <AdvanceReceiptPrinter
-        data={{ txns, cb, merchants, kyc, totalVol, disputedAmt, activeMerchants }}
-        onNavigate={onNavigate}
-      />
-
-      {/* 1. Grand Hero KPI Container with Lime Payout Widget & Timeline */}
-      <div className="hero-kpi-card">
-        {/* Col 1: Overdue / Disputed Amount */}
-        <div className="kpi-col">
-          <div>
-            <div className="kpi-title-small">Disputed & In-Review</div>
-            <div className="kpi-big-value">
-              {fmtINR(disputedAmt)}
-            </div>
-          </div>
-          <div>
-            <div className="kpi-timeline-row">
-              <div className="timeline-step">
-                <span className="timeline-step-label">Sep</span>
-                <div className="timeline-step-bar" />
+      {/* Top 2-Column Grid: Left (KPIs & Activity Chart) + Right (Receipt Slip Alone) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 360px',
+        gap: 20,
+        alignItems: 'start'
+      }}>
+        {/* Left Column: KPIs & Daily Velocity Timeline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* 1. Grand Hero KPI Container with Lime Payout Widget & Timeline */}
+          <div className="hero-kpi-card">
+            {/* Col 1: Overdue / Disputed Amount */}
+            <div className="kpi-col">
+              <div>
+                <div className="kpi-title-small">Disputed & In-Review</div>
+                <div className="kpi-big-value">
+                  {fmtINR(disputedAmt)}
+                </div>
               </div>
-              <div className="timeline-step">
-                <span className="timeline-step-label">Oct</span>
-                <div className="timeline-step-bar" />
-              </div>
-              <div className="timeline-step">
-                <span className="timeline-step-label" style={{ color: 'var(--accent)' }}>Nov</span>
-                <div className="timeline-step-bar active" />
-              </div>
-              <div className="timeline-step">
-                <span className="timeline-step-label">Dec</span>
-                <div className="timeline-step-bar" />
-              </div>
-            </div>
-            <div className="avatar-stack">
-              <div className="avatar-stack-item">🧑‍💼</div>
-              <div className="avatar-stack-item">👩‍💼</div>
-              <div className="avatar-stack-item">🧔</div>
-              <div className="avatar-stack-item">👩‍🔬</div>
-              <div className="avatar-stack-item">+8</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Col 2: Due within next month / Total Volume */}
-        <div className="kpi-col">
-          <div>
-            <div className="kpi-title-small">Processed Volume (30D)</div>
-            <div className="kpi-big-value">
-              {fmtINR(totalVol)}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>Settlement Velocity</div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{ width: '78%', height: '100%', background: 'var(--accent)' }} />
-            </div>
-            <div className="avatar-stack">
-              <div className="avatar-stack-item">👨‍💻</div>
-              <div className="avatar-stack-item">👱‍♀️</div>
-              <div className="avatar-stack-item">🧑‍💼</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Col 3: Average time to get paid / Active Merchants */}
-        <div className="kpi-col">
-          <div>
-            <div className="kpi-title-small">Average Settlement Time</div>
-            <div className="kpi-big-value">
-              2.4 <span>days</span>
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
-              Active Merchants: <b style={{ color: '#fff' }}>{activeMerchants.toLocaleString()}</b>
-            </div>
-            <div className="avatar-stack">
-              <div className="avatar-stack-item">👩‍💼</div>
-              <div className="avatar-stack-item">👨‍💼</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Col 4: Highlight Instant Payout Card with Electric Lime Accent */}
-        <div className="hero-payout-box">
-          <div className="payout-header">
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600 }}>Available for Instant Payout</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-display)', marginTop: 2 }}>
-                ₹2,14,390.00
+              <div>
+                <div className="kpi-timeline-row">
+                  <div className="timeline-step">
+                    <span className="timeline-step-label">Sep</span>
+                    <div className="timeline-step-bar" />
+                  </div>
+                  <div className="timeline-step">
+                    <span className="timeline-step-label">Oct</span>
+                    <div className="timeline-step-bar" />
+                  </div>
+                  <div className="timeline-step">
+                    <span className="timeline-step-label" style={{ color: 'var(--accent)' }}>Nov</span>
+                    <div className="timeline-step-bar active" />
+                  </div>
+                  <div className="timeline-step">
+                    <span className="timeline-step-label">Dec</span>
+                    <div className="timeline-step-bar" />
+                  </div>
+                </div>
+                <div className="avatar-stack">
+                  <div className="avatar-stack-item">🧑‍💼</div>
+                  <div className="avatar-stack-item">👩‍💼</div>
+                  <div className="avatar-stack-item">🧔</div>
+                  <div className="avatar-stack-item">👩‍🔬</div>
+                  <div className="avatar-stack-item">+8</div>
+                </div>
               </div>
             </div>
-            <span style={{ fontSize: 10, color: 'var(--text-2)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
-              Auto Payout
-            </span>
+
+            {/* Col 2: Due within next month / Total Volume */}
+            <div className="kpi-col">
+              <div>
+                <div className="kpi-title-small">Processed Volume (30D)</div>
+                <div className="kpi-big-value">
+                  {fmtINR(totalVol)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>Settlement Velocity</div>
+                <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: '78%', height: '100%', background: 'var(--accent)' }} />
+                </div>
+                <div className="avatar-stack">
+                  <div className="avatar-stack-item">👨‍💻</div>
+                  <div className="avatar-stack-item">👱‍♀️</div>
+                  <div className="avatar-stack-item">🧑‍💼</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 3: Average time to get paid / Active Merchants */}
+            <div className="kpi-col">
+              <div>
+                <div className="kpi-title-small">Average Settlement Time</div>
+                <div className="kpi-big-value">
+                  2.4 <span>days</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
+                  Active Merchants: <b style={{ color: '#fff' }}>{activeMerchants.toLocaleString()}</b>
+                </div>
+                <div className="avatar-stack">
+                  <div className="avatar-stack-item">👩‍💼</div>
+                  <div className="avatar-stack-item">👨‍💼</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 4: Highlight Instant Payout Card with Electric Lime Accent */}
+            <div className="hero-payout-box">
+              <div className="payout-header">
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600 }}>Available for Instant Payout</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-display)', marginTop: 2 }}>
+                    ₹2,14,390.00
+                  </div>
+                </div>
+                <span style={{ fontSize: 10, color: 'var(--text-2)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
+                  Auto Payout
+                </span>
+              </div>
+
+              <div className="payout-pills-row">
+                <div className="payout-item-pill">
+                  <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#4443</span>
+                  <span>Visa</span>
+                </div>
+                <div className="payout-item-pill active">
+                  <span style={{ fontSize: 9 }}>#177210</span>
+                  <span>UPI Instant</span>
+                </div>
+                <div className="payout-item-pill">
+                  <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#711221</span>
+                  <span>IMPS Net</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigate && onNavigate('dispute')}
+                style={{
+                  width: '100%',
+                  background: '#ffffff',
+                  color: '#000000',
+                  border: 'none',
+                  padding: '8px 0',
+                  borderRadius: 'var(--radius-pill)',
+                  fontWeight: 800,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s'
+                }}
+              >
+                Pay out now →
+              </button>
+            </div>
           </div>
 
-          <div className="payout-pills-row">
-            <div className="payout-item-pill">
-              <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#4443</span>
-              <span>Visa</span>
+          {/* 2. Interactive Transaction Activity Chart */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#fff' }}>
+                  Daily Transaction Velocity & Disputes
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
+                  Interactive timeline with marked axes, hover crosshairs, and live feed telemetry.
+                </div>
+              </div>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 800,
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)',
+                padding: '3px 10px',
+                borderRadius: 'var(--radius-pill)',
+                border: '1px solid rgba(180, 243, 41, 0.4)'
+              }}>
+                ● LIVE FEED
+              </span>
             </div>
-            <div className="payout-item-pill active">
-              <span style={{ fontSize: 9 }}>#177210</span>
-              <span>UPI Instant</span>
-            </div>
-            <div className="payout-item-pill">
-              <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#711221</span>
-              <span>IMPS Net</span>
-            </div>
-          </div>
 
-          <button
-            onClick={() => onNavigate && onNavigate('dispute')}
-            style={{
-              width: '100%',
-              background: '#ffffff',
-              color: '#000000',
-              border: 'none',
-              padding: '8px 0',
-              borderRadius: 'var(--radius-pill)',
-              fontWeight: 800,
-              fontSize: 12,
-              cursor: 'pointer',
-              transition: 'background 0.15s'
-            }}
-          >
-            Pay out now →
-          </button>
+            <InteractiveTimeSeriesChart dataPoints={dailyTimeSeriesData} />
+          </div>
         </div>
-      </div>
 
-      {/* 2. Filter Capsule Bar Row */}
-      <div className="filter-capsule-bar">
-        <div className="filter-left-group">
-          <div className="filter-badge-count">
-            Active filters <span>3</span>
-          </div>
-          <select className="filter-pill-select">
-            <option>All Merchants</option>
-            <option>High Risk Merchants</option>
-            <option>Flagged Accounts</option>
-          </select>
-          <select className="filter-pill-select">
-            <option>All 12 Cities</option>
-            <option>Mumbai & Pune</option>
-            <option>Delhi NCR</option>
-            <option>Bengaluru</option>
-          </select>
-          <select className="filter-pill-select">
-            <option>November 2026</option>
-            <option>December 2026</option>
-            <option>Full Year 2026</option>
-          </select>
+        {/* Right Column: The Receipt Slip ONLY (place nothing else here) */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <AdvanceReceiptPrinter
+            data={{ txns, cb, merchants, kyc, totalVol, disputedAmt, activeMerchants }}
+            onNavigate={onNavigate}
+          />
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-pill)',
-            padding: '6px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 12,
-            color: 'var(--text-2)'
-          }}>
-            <span>🔍</span>
-            <input
-              type="text"
-              placeholder="Search invoice or txn ID..."
-              style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: '#fff',
-                fontSize: 12,
-                width: 170
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Interactive Transaction Activity Chart */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#fff' }}>
-              Daily Transaction Velocity & Disputes
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
-              Interactive timeline with marked axes, hover crosshairs, and live feed telemetry.
-            </div>
-          </div>
-          <span style={{
-            fontSize: 10,
-            fontWeight: 800,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            padding: '3px 10px',
-            borderRadius: 'var(--radius-pill)',
-            border: '1px solid rgba(180, 243, 41, 0.4)'
-          }}>
-            ● LIVE FEED
-          </span>
-        </div>
-
-        <InteractiveTimeSeriesChart dataPoints={dailyTimeSeriesData} />
       </div>
 
       {/* 4. Bottom Split Layout: High-Contrast Invoices List + Dark Deep-Dive Inspector */}

@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+/**
+ * AdvanceReceiptPrinter Component
+ * 
+ * A skeuomorphic thermal receipt printer web component featuring:
+ * 1. Dark-mode card container with "Order complete" / "Audit complete" checkmark header.
+ * 2. Narrow printer slit mouth with `overflow: hidden`.
+ * 3. Stepped mechanical feed animation mimicking authentic thermal POS printers.
+ * 4. Crisp white receipt paper with jagged torn thermal paper edges.
+ * 5. Full TransOrg Sentinel AI Datathon project summary details.
+ * 6. Interactive Re-print, Tear, and Copy actions with sound effects.
+ */
 export default function AdvanceReceiptPrinter({ data = {}, onNavigate }) {
-  const [printState, setPrintState] = useState('printed'); // 'idle' | 'printing' | 'printed' | 'torn'
+  const [printState, setPrintState] = useState('printing'); // 'printing' | 'printed' | 'torn'
   const [copied, setCopied] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const audioCtxRef = useRef(null);
 
-  // Play subtle thermal printer motor sound synthesis
+  // Synthesize realistic thermal printer stepper motor sound
   const playPrinterSound = () => {
     if (!audioEnabled) return;
     try {
@@ -17,21 +28,21 @@ export default function AdvanceReceiptPrinter({ data = {}, onNavigate }) {
       if (ctx.state === 'suspended') ctx.resume();
 
       const now = ctx.currentTime;
-      // Synthesize rhythmic mechanical print stepper ticks
-      for (let i = 0; i < 6; i++) {
+      // 5 stepped motor feed pulses
+      for (let i = 0; i < 5; i++) {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(140 + (i % 2) * 60, now + i * 0.28);
-        gain.gain.setValueAtTime(0.04, now + i * 0.28);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.28 + 0.18);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160 + (i % 2) * 40, now + i * 0.36);
+        gain.gain.setValueAtTime(0.035, now + i * 0.36);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.36 + 0.22);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + i * 0.28);
-        osc.stop(now + i * 0.28 + 0.19);
+        osc.start(now + i * 0.36);
+        osc.stop(now + i * 0.36 + 0.23);
       }
     } catch {
-      // Audio context might be restricted before user gesture
+      // Audio fallback
     }
   };
 
@@ -44,41 +55,40 @@ export default function AdvanceReceiptPrinter({ data = {}, onNavigate }) {
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') ctx.resume();
 
-      // Synthesize paper rip white noise burst
-      const bufferSize = ctx.sampleRate * 0.15;
+      const bufferSize = ctx.sampleRate * 0.12;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
       }
-      const whiteNoise = ctx.createBufferSource();
-      whiteNoise.buffer = buffer;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
       const filter = ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 800;
+      filter.type = 'bandpass';
+      filter.frequency.value = 1200;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.06, ctx.currentTime);
-      whiteNoise.connect(filter);
+      noise.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
-      whiteNoise.start();
+      noise.start();
     } catch {
       // Audio fallback
     }
   };
 
-  // Start printing sequence
+  // Trigger stepped print animation
   const handlePrint = () => {
     setPrintState('printing');
     playPrinterSound();
     setTimeout(() => {
       setPrintState('printed');
-    }, 2100);
+    }, 2200);
   };
 
+  // Toggle receipt tear
   const handleTear = () => {
     if (printState === 'torn') {
-      // Re-attach
       setPrintState('printed');
     } else {
       setPrintState('torn');
@@ -86,437 +96,442 @@ export default function AdvanceReceiptPrinter({ data = {}, onNavigate }) {
     }
   };
 
+  // Copy plain text summary to clipboard
   const handleCopy = () => {
-    const textSummary = `
+    const summary = `
 ========================================
-       SENTINEL FINTECH AUDIT
-       EXECUTIVE SUMMARY REPORT
+     SENTINEL INTELLIGENCE ENGINE
+  TRANSORG AGENTIQ DATATHON SUMMARY
 ========================================
-Date: 14 Sep 2026 | Terminal: #9942
-Auditor: Sentinel AI System
-Tracking: TXN-7451188122-8M
-
-TOTAL PROCESSED: ₹24,851,850.00
+Status:       Order Complete ✓
+Tracking:     TXN-7451188122-8M
+Date:         14 Sep 2026 | 20:45 UTC
+Terminal:     POS-SENTINEL-9942
 ----------------------------------------
-• UPI Volume (Clean): 2,800 Txns (₹18.4M)
-• Dispute Claims: 2,800 Cases
-  - OPEN: 1,492 (53.3%)
-  - CLOSED: 865 (30.9%)
-  - REJECTED: 443 (15.8%)
+PROJECT DELIVERABLES & METRICS:
+• Dataset Scope:      2,800 Verified Records
+• Financial Volume:   ₹24.85 Cr Processed
+• Dispute Intake:     2,800 Cases Analyzed
+  - OPEN:             1,492 (53.3%)
+  - CLOSED:           865   (30.9%)
+  - REJECTED:         443   (15.8%)
 • Top Intake Channel: IVR (709) | Bot (698)
-• High Risk Intercepted: ₹4.12 Cr
-• Fraud Loss Mitigated: +₹1.85 Cr
-• KYC Verification Rate: 94.2% Passed
+• Risk Mitigation:    ₹4.12 Cr Intercepted
+• Fraud Prevented:    +₹1.85 Cr Loss Saved
+• Identity Pass Rate: 94.2% KYC Verified
 ----------------------------------------
-SUBTOTAL:     ₹24,797,000.00
-DISPUTES NET: -₹1,492,000.00
-RECOVERED:    +₹1,280,000.00
+SUBTOTAL AUDITED:     ₹2,797.00
+DISPUTE SHIELD:       -₹100.00
+RESERVE FUND:         +₹20.00
+TAX (GST 5%):         ₹134.85
 ----------------------------------------
-GRAND TOTAL:  ₹24,851,850.00
-STATUS:       AUDITED & COMPLIANT ✓
+GRAND TOTAL:          ₹2,851.85
+STATUS:               AUDITED & COMPLIANT
 ========================================
-    THANK YOU FOR USING SENTINEL AI!
+  TRANSORG AGENTIQ DATATHON 2026
 `;
-    navigator.clipboard.writeText(textSummary.trim()).then(() => {
+    navigator.clipboard.writeText(summary.trim()).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
+      setTimeout(() => setCopied(false), 2200);
     }).catch(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
+      setTimeout(() => setCopied(false), 2200);
     });
   };
 
-  // Auto-run printing animation once on mount
+  // Auto-play print animation on page load
   useEffect(() => {
     const timer = setTimeout(() => {
       handlePrint();
-    }, 400);
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="receipt-print-wrapper">
-      {/* Printer Header Label & Title */}
-      <div className="receipt-header-hero">
-        <div className="receipt-hero-title">
-          Advance Receipt Print <span>Animation</span>
-        </div>
-        <div className="receipt-hero-subtitle">
-          Live executive data roll · Real-time financial telemetry audit slip
-        </div>
-      </div>
-
-      {/* Main Interactive Stage */}
-      <div className="printer-stage-container">
-        {/* Physical 3D Printer Bar (Top Slot) */}
-        <div className="printer-device-slot">
-          {/* Subtle status LED */}
-          <div className={`printer-led ${printState === 'printing' ? 'led-pulsing' : 'led-ready'}`} title={printState === 'printing' ? 'Printing in progress' : 'Printer Ready'} />
-          
-          {/* Slit opening from which paper emerges */}
-          <div className="printer-slit-hole" />
-          
-          {/* Printer brand watermark on hardware */}
-          <div className="printer-hardware-label">
-            SENTINEL POS-80 THERMAL AUDIT ENGINE
-          </div>
-        </div>
-
-        {/* Paper Container with overflow hide / slide-down mechanics */}
-        <div className={`paper-motion-track ${printState === 'printing' ? 'is-printing' : ''} ${printState === 'torn' ? 'is-torn' : ''}`}>
-          
-          {/* Authentic Paper Slip */}
-          <div className="thermal-receipt-paper">
-            {/* Top Shadow inside slot for depth */}
-            <div className="paper-top-slot-shadow" />
-
-            {/* Receipt Header */}
-            <div className="receipt-brand-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div className="receipt-logo-glyph">✦</div>
-                <div>
-                  <div className="receipt-brand-name">SENTINEL AUDIT AGENCY</div>
-                  <div className="receipt-sub-tag">FINANCIAL RISK INTELLIGENCE SLIP</div>
-                </div>
-              </div>
-              <div className="receipt-badge-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 7V13C3 18.5 7 23 12 24C17 23 21 18.5 21 13V7L12 2Z" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" fill="rgba(37, 99, 235, 0.1)"/>
-                  <path d="M8.5 12.5L11 15L15.5 9.5" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
-
-            {/* Metadata Bar */}
-            <div className="receipt-meta-grid">
-              <div>
-                <span className="receipt-lbl">CLIENT:</span>
-                <span className="receipt-val">SENTINEL AI AUTO-AUDIT</span>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span className="receipt-lbl">VISA/UPI:</span>
-                <span className="receipt-val">•••• 9942</span>
-              </div>
-            </div>
-
-            {/* Big Headline & Stamp */}
-            <div className="receipt-headline-box">
-              <div>
-                <div className="receipt-grand-headline">₹2,85,185.00</div>
-                <div className="receipt-headline-sub">14TH SEPTEMBER 2026 | INVOICE AUDITED</div>
-              </div>
-
-              {/* Grunge Stamp */}
-              <div className="receipt-stamp-paid">
-                <div className="stamp-inner">
-                  <div className="stamp-word">PAID</div>
-                  <div className="stamp-date">14 SEP 2026</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="receipt-dashed-divider" />
-
-            {/* Itemized Line Items Breakdown */}
-            <div className="receipt-item-list">
-              <div className="receipt-item-row">
-                <div className="receipt-item-desc">
-                  <span className="receipt-qty">1X</span> Disputed Claims (Open/Closed/Rej)
-                </div>
-                <div className="receipt-item-amount">1,492 / 865 / 443</div>
-              </div>
-
-              <div className="receipt-item-row">
-                <div className="receipt-item-desc">
-                  <span className="receipt-qty">1X</span> High Risk Flagged Volume
-                </div>
-                <div className="receipt-item-amount">₹4.12 Cr</div>
-              </div>
-
-              <div className="receipt-item-row">
-                <div className="receipt-item-desc">
-                  <span className="receipt-qty">1X</span> Top Channel Intake (IVR/Bot)
-                </div>
-                <div className="receipt-item-amount">1,407 Txns</div>
-              </div>
-
-              <div className="receipt-item-row">
-                <div className="receipt-item-desc">
-                  <span className="receipt-qty">1X</span> Fraud Loss Mitigated (AI)
-                </div>
-                <div className="receipt-item-amount">₹1.85 Cr</div>
-              </div>
-
-              <div className="receipt-item-row">
-                <div className="receipt-item-desc">
-                  <span className="receipt-qty">1X</span> KYC Identity Integrity
-                </div>
-                <div className="receipt-item-amount">94.2% Passed</div>
-              </div>
-            </div>
-
-            <div className="receipt-dashed-divider" />
-
-            {/* Calculations & Subtotals */}
-            <div className="receipt-calc-table">
-              <div className="receipt-calc-row">
-                <span className="calc-lbl">Subtotal</span>
-                <span className="calc-val">₹2,797.00</span>
-              </div>
-              <div className="receipt-calc-row discount-row">
-                <span className="calc-lbl">Discount (Dispute Shield)</span>
-                <span className="calc-val">-₹100.00</span>
-              </div>
-              <div className="receipt-calc-row">
-                <span className="calc-lbl">Gratuity (Reserve Fund)</span>
-                <span className="calc-val">+₹20.00</span>
-              </div>
-              <div className="receipt-calc-row">
-                <span className="calc-lbl">Tax (GST 5%)</span>
-                <span className="calc-val">₹134.85</span>
-              </div>
-            </div>
-
-            <div className="receipt-solid-divider" />
-
-            {/* Grand Total */}
-            <div className="receipt-total-row">
-              <span className="total-title">GRAND TOTAL</span>
-              <span className="total-amount">₹2851.85</span>
-            </div>
-
-            {/* Thank You Note */}
-            <div className="receipt-footer-note">
-              THANK YOU FOR PARTNERING WITH SENTINEL AI INTELLIGENCE!
-            </div>
-
-            {/* Barcode */}
-            <div className="receipt-barcode-box">
-              <svg className="barcode-svg" viewBox="0 0 280 44" preserveAspectRatio="none">
-                {/* Crisp realistic thermal barcode lines */}
-                <rect x="0" y="0" width="3" height="44" fill="#111" />
-                <rect x="5" y="0" width="2" height="44" fill="#111" />
-                <rect x="10" y="0" width="4" height="44" fill="#111" />
-                <rect x="17" y="0" width="1" height="44" fill="#111" />
-                <rect x="21" y="0" width="3" height="44" fill="#111" />
-                <rect x="26" y="0" width="5" height="44" fill="#111" />
-                <rect x="34" y="0" width="2" height="44" fill="#111" />
-                <rect x="39" y="0" width="3" height="44" fill="#111" />
-                <rect x="45" y="0" width="1" height="44" fill="#111" />
-                <rect x="49" y="0" width="4" height="44" fill="#111" />
-                <rect x="56" y="0" width="2" height="44" fill="#111" />
-                <rect x="61" y="0" width="5" height="44" fill="#111" />
-                <rect x="69" y="0" width="1" height="44" fill="#111" />
-                <rect x="73" y="0" width="3" height="44" fill="#111" />
-                <rect x="79" y="0" width="4" height="44" fill="#111" />
-                <rect x="86" y="0" width="2" height="44" fill="#111" />
-                <rect x="91" y="0" width="5" height="44" fill="#111" />
-                <rect x="99" y="0" width="2" height="44" fill="#111" />
-                <rect x="104" y="0" width="3" height="44" fill="#111" />
-                <rect x="110" y="0" width="1" height="44" fill="#111" />
-                <rect x="114" y="0" width="4" height="44" fill="#111" />
-                <rect x="121" y="0" width="2" height="44" fill="#111" />
-                <rect x="126" y="0" width="5" height="44" fill="#111" />
-                <rect x="134" y="0" width="2" height="44" fill="#111" />
-                <rect x="139" y="0" width="4" height="44" fill="#111" />
-                <rect x="146" y="0" width="1" height="44" fill="#111" />
-                <rect x="150" y="0" width="3" height="44" fill="#111" />
-                <rect x="156" y="0" width="5" height="44" fill="#111" />
-                <rect x="164" y="0" width="2" height="44" fill="#111" />
-                <rect x="169" y="0" width="4" height="44" fill="#111" />
-                <rect x="176" y="0" width="2" height="44" fill="#111" />
-                <rect x="181" y="0" width="5" height="44" fill="#111" />
-                <rect x="189" y="0" width="1" height="44" fill="#111" />
-                <rect x="193" y="0" width="4" height="44" fill="#111" />
-                <rect x="200" y="0" width="2" height="44" fill="#111" />
-                <rect x="205" y="0" width="5" height="44" fill="#111" />
-                <rect x="213" y="0" width="2" height="44" fill="#111" />
-                <rect x="218" y="0" width="3" height="44" fill="#111" />
-                <rect x="224" y="0" width="1" height="44" fill="#111" />
-                <rect x="228" y="0" width="4" height="44" fill="#111" />
-                <rect x="235" y="0" width="2" height="44" fill="#111" />
-                <rect x="240" y="0" width="5" height="44" fill="#111" />
-                <rect x="248" y="0" width="2" height="44" fill="#111" />
-                <rect x="253" y="0" width="4" height="44" fill="#111" />
-                <rect x="260" y="0" width="1" height="44" fill="#111" />
-                <rect x="264" y="0" width="4" height="44" fill="#111" />
-                <rect x="271" y="0" width="3" height="44" fill="#111" />
-                <rect x="277" y="0" width="3" height="44" fill="#111" />
+    <div className="receipt-side-container">
+      {/* Dark-Mode Card Container */}
+      <div className="receipt-dark-card">
+        {/* Top Status: Order Complete with Checkmark Icon */}
+        <div className="order-complete-header">
+          <div className="status-badge-row">
+            <div className="status-check-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
               </svg>
-              <div className="receipt-tracking-code">TXN-7451188122-8M</div>
             </div>
-
-            {/* Jagged Sawtooth Perforated Torn Bottom Edge */}
-            <div className="receipt-zigzag-bottom" />
+            <div>
+              <div className="status-title-text">Order complete</div>
+              <div className="status-sub-text">Audit slip generated automatically</div>
+            </div>
+          </div>
+          <div className="live-pulse-indicator" title="Live Terminal Feed">
+            <span className="pulse-dot" />
+            <span>LIVE POS</span>
           </div>
         </div>
-      </div>
 
-      {/* Dynamic Status Label matching reference image */}
-      <div className="receipt-status-section">
-        <div className="receipt-status-headline">
-          {printState === 'printing'
-            ? 'Printing Telemetry Slip...'
-            : printState === 'torn'
-            ? 'Receipt Cut & Torn'
-            : 'Payment & Audit Successful'}
+        {/* Physical Printer Slot Container */}
+        <div className="printer-assembly">
+          {/* Printer Bezel / Mouth Bar */}
+          <div className="printer-slot-bezel">
+            <div className={`printer-status-led ${printState === 'printing' ? 'led-active' : 'led-ready'}`} />
+            <div className="printer-slit-opening" />
+            <div className="printer-brand-emboss">SENTINEL POS-80 THERMAL FEED</div>
+          </div>
+
+          {/* Narrow Slit with overflow:hidden acting as the physical mouth */}
+          <div className="printer-mouth-window">
+            {/* The Receipt Component moving downwards */}
+            <div className={`receipt-feed-carriage ${printState === 'printing' ? 'stepped-printing' : ''} ${printState === 'torn' ? 'torn-detached' : ''}`}>
+              <div className="thermal-paper-slip">
+                
+                {/* Jagged / Dashed Top Border mimicking torn thermal paper */}
+                <div className="jagged-top-perforation" />
+
+                {/* Receipt Header & Logo */}
+                <div className="slip-header-brand">
+                  <div className="slip-brand-left">
+                    <div className="slip-logo-glyph">✦</div>
+                    <div>
+                      <div className="slip-brand-title">BIZY MEDIA AGENCY</div>
+                      <div className="slip-brand-subtitle">DIGITAL SERVICES RECEIPT</div>
+                    </div>
+                  </div>
+                  {/* Brand Mark Icon */}
+                  <div className="slip-brand-mark">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 4H14C16.2091 4 18 5.79086 18 8C18 10.2091 16.2091 12 14 12H5V4Z" fill="#2563eb" />
+                      <path d="M5 12H15C17.2091 12 19 13.7909 19 16C19 18.2091 17.2091 20 15 20H5V12Z" fill="#1d4ed8" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Client Metadata */}
+                <div className="slip-meta-table">
+                  <div>
+                    <span className="slip-lbl">CLIENT:</span>
+                    <span className="slip-val">USMAN SHAMS</span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span className="slip-lbl">Visa</span>
+                    <span className="slip-val">•••• 4242</span>
+                  </div>
+                </div>
+
+                {/* Headline Total & Slanted Stamp */}
+                <div className="slip-headline-section">
+                  <div>
+                    <div className="slip-big-amount">£2851.85</div>
+                    <div className="slip-invoice-date">10TH AUGUST 2026 | INVOICE PAID</div>
+                  </div>
+
+                  {/* Red Tilted PAID Stamp */}
+                  <div className="slip-stamp-paid">
+                    <div className="stamp-title">PAID</div>
+                    <div className="stamp-sub">30 AUG 2026</div>
+                  </div>
+                </div>
+
+                <div className="slip-dotted-line" />
+
+                {/* Project Breakdown Content Details */}
+                <div className="slip-line-items">
+                  <div className="slip-item-row">
+                    <span className="slip-item-desc">1X Web Development & Design</span>
+                    <span className="slip-item-price">£1499.00</span>
+                  </div>
+                  <div className="slip-item-row">
+                    <span className="slip-item-desc">1X SEO Optimization (Monthly)</span>
+                    <span className="slip-item-price">£499.00</span>
+                  </div>
+                  <div className="slip-item-row">
+                    <span className="slip-item-desc">1X Digital Marketing & Branding</span>
+                    <span className="slip-item-price">£799.00</span>
+                  </div>
+                </div>
+
+                <div className="slip-dotted-line" />
+
+                {/* Subtotals & Taxes */}
+                <div className="slip-totals-table">
+                  <div className="slip-calc-line">
+                    <span>Subtotal</span>
+                    <span>£2797.00</span>
+                  </div>
+                  <div className="slip-calc-line slip-discount-line">
+                    <span>Discount (Promo)</span>
+                    <span>-£100.00</span>
+                  </div>
+                  <div className="slip-calc-line">
+                    <span>Gratuity (Tip)</span>
+                    <span>+£20.00</span>
+                  </div>
+                  <div className="slip-calc-line">
+                    <span>Tax (5%)</span>
+                    <span>£134.85</span>
+                  </div>
+                </div>
+
+                <div className="slip-solid-line" />
+
+                {/* Grand Total */}
+                <div className="slip-grand-total-row">
+                  <span className="grand-lbl">GRAND TOTAL</span>
+                  <span className="grand-val">£2851.85</span>
+                </div>
+
+                {/* Thank you text */}
+                <div className="slip-thankyou-note">
+                  THANK YOU FOR PARTNERING WITH BIZY MEDIA!
+                </div>
+
+                {/* Thermal Barcode */}
+                <div className="slip-barcode-area">
+                  <svg className="thermal-barcode-svg" viewBox="0 0 240 38" preserveAspectRatio="none">
+                    <rect x="0" y="0" width="3" height="38" fill="#111" />
+                    <rect x="5" y="0" width="2" height="38" fill="#111" />
+                    <rect x="9" y="0" width="4" height="38" fill="#111" />
+                    <rect x="15" y="0" width="1" height="38" fill="#111" />
+                    <rect x="19" y="0" width="3" height="38" fill="#111" />
+                    <rect x="24" y="0" width="5" height="38" fill="#111" />
+                    <rect x="31" y="0" width="2" height="38" fill="#111" />
+                    <rect x="35" y="0" width="3" height="38" fill="#111" />
+                    <rect x="41" y="0" width="1" height="38" fill="#111" />
+                    <rect x="45" y="0" width="4" height="38" fill="#111" />
+                    <rect x="51" y="0" width="2" height="38" fill="#111" />
+                    <rect x="56" y="0" width="5" height="38" fill="#111" />
+                    <rect x="63" y="0" width="1" height="38" fill="#111" />
+                    <rect x="67" y="0" width="3" height="38" fill="#111" />
+                    <rect x="73" y="0" width="4" height="38" fill="#111" />
+                    <rect x="79" y="0" width="2" height="38" fill="#111" />
+                    <rect x="84" y="0" width="5" height="38" fill="#111" />
+                    <rect x="91" y="0" width="2" height="38" fill="#111" />
+                    <rect x="95" y="0" width="3" height="38" fill="#111" />
+                    <rect x="100" y="0" width="1" height="38" fill="#111" />
+                    <rect x="104" y="0" width="4" height="38" fill="#111" />
+                    <rect x="111" y="0" width="2" height="38" fill="#111" />
+                    <rect x="115" y="0" width="5" height="38" fill="#111" />
+                    <rect x="123" y="0" width="2" height="38" fill="#111" />
+                    <rect x="127" y="0" width="4" height="38" fill="#111" />
+                    <rect x="134" y="0" width="1" height="38" fill="#111" />
+                    <rect x="138" y="0" width="3" height="38" fill="#111" />
+                    <rect x="143" y="0" width="5" height="38" fill="#111" />
+                    <rect x="151" y="0" width="2" height="38" fill="#111" />
+                    <rect x="155" y="0" width="4" height="38" fill="#111" />
+                    <rect x="162" y="0" width="2" height="38" fill="#111" />
+                    <rect x="167" y="0" width="5" height="38" fill="#111" />
+                    <rect x="174" y="0" width="1" height="38" fill="#111" />
+                    <rect x="178" y="0" width="4" height="38" fill="#111" />
+                    <rect x="185" y="0" width="2" height="38" fill="#111" />
+                    <rect x="190" y="0" width="5" height="38" fill="#111" />
+                    <rect x="197" y="0" width="2" height="38" fill="#111" />
+                    <rect x="201" y="0" width="3" height="38" fill="#111" />
+                    <rect x="207" y="0" width="1" height="38" fill="#111" />
+                    <rect x="211" y="0" width="4" height="38" fill="#111" />
+                    <rect x="217" y="0" width="2" height="38" fill="#111" />
+                    <rect x="222" y="0" width="5" height="38" fill="#111" />
+                    <rect x="230" y="0" width="2" height="38" fill="#111" />
+                    <rect x="235" y="0" width="4" height="38" fill="#111" />
+                  </svg>
+                  <div className="slip-barcode-text">TXN-7451188122-8M</div>
+                </div>
+
+                {/* Jagged Bottom Perforation */}
+                <div className="jagged-bottom-perforation" />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="receipt-status-sub">
-          {printState === 'printing'
-            ? 'Thermal feed active at 180mm/sec.'
-            : printState === 'torn'
-            ? 'Ready to print a fresh copy anytime.'
-            : "You're all set—now let the receipt roll!"}
+
+        {/* Dynamic Status Section below receipt */}
+        <div className="slip-status-footer">
+          <div className="status-footer-headline">
+            {printState === 'printing'
+              ? 'Printing receipt...'
+              : printState === 'torn'
+              ? 'Receipt Cut & Torn'
+              : 'Payment Successful'}
+          </div>
+          <div className="status-footer-sub">
+            {printState === 'printing'
+              ? 'Mechanical thermal feed in progress.'
+              : printState === 'torn'
+              ? 'Ready to print a fresh copy anytime.'
+              : "You're all set—now let the receipt roll!"}
+          </div>
         </div>
-      </div>
 
-      {/* Interactive Action Control Buttons matching screenshot */}
-      <div className="receipt-buttons-bar">
-        <button
-          onClick={handlePrint}
-          disabled={printState === 'printing'}
-          className="receipt-btn btn-print"
-        >
-          <span className="btn-icon">🖨️</span>
-          <span>{printState === 'printing' ? 'Printing...' : 'Re-print receipt'}</span>
-        </button>
-
-        <button
-          onClick={handleTear}
-          disabled={printState === 'printing'}
-          className={`receipt-btn btn-tear ${printState === 'torn' ? 'btn-active-torn' : ''}`}
-        >
-          <span className="btn-icon">📄</span>
-          <span>{printState === 'torn' ? 'Re-attach receipt' : 'Tear receipt'}</span>
-        </button>
-
-        <button
-          onClick={handleCopy}
-          className="receipt-btn btn-copy"
-        >
-          <span className="btn-icon">{copied ? '✓' : '📋'}</span>
-          <span>{copied ? 'Copied!' : 'Copy'}</span>
-        </button>
-      </div>
-
-      {/* Sound toggle & quick navigation */}
-      <div className="receipt-micro-actions">
-        <button
-          onClick={() => setAudioEnabled(!audioEnabled)}
-          className="sound-toggle-btn"
-          title="Toggle printer sound effects"
-        >
-          {audioEnabled ? '🔊 Sound On' : '🔇 Sound Muted'}
-        </button>
-        {onNavigate && (
+        {/* Responsive Control Buttons */}
+        <div className="slip-action-buttons">
           <button
-            onClick={() => onNavigate('dispute')}
-            className="deep-dive-link"
+            onClick={handlePrint}
+            disabled={printState === 'printing'}
+            className="action-btn-print"
           >
-            Explore Full Dispute Intelligence →
+            <span className="btn-icon-symbol">🖨️</span>
+            <span>{printState === 'printing' ? 'Printing...' : 'Re-print receipt'}</span>
           </button>
-        )}
+
+          <button
+            onClick={handleTear}
+            disabled={printState === 'printing'}
+            className={`action-btn-tear ${printState === 'torn' ? 'btn-torn-active' : ''}`}
+          >
+            <span className="btn-icon-symbol">📄</span>
+            <span>{printState === 'torn' ? 'Attach receipt' : 'Tear receipt'}</span>
+          </button>
+
+          <button
+            onClick={handleCopy}
+            className="action-btn-copy"
+          >
+            <span className="btn-icon-symbol">{copied ? '✓' : '📋'}</span>
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+        </div>
+
+        {/* Secondary controls */}
+        <div className="slip-micro-toggles">
+          <button
+            onClick={() => setAudioEnabled(!audioEnabled)}
+            className="micro-audio-toggle"
+          >
+            {audioEnabled ? '🔊 Sound On' : '🔇 Muted'}
+          </button>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('dispute')}
+              className="micro-link-nav"
+            >
+              Dispute Analytics →
+            </button>
+          )}
+        </div>
       </div>
 
       <style>{`
-        .receipt-print-wrapper {
+        .receipt-side-container {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        /* Dark-Mode Card Container */
+        .receipt-dark-card {
+          width: 100%;
+          max-width: 360px;
+          background: #11141c;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 20px 18px 18px 18px;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          width: 100%;
-          padding: 32px 16px 28px 16px;
-          background: radial-gradient(circle at 50% 10%, rgba(26, 31, 44, 0.6) 0%, rgba(13, 16, 23, 0.95) 75%);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-xl);
-          margin-bottom: 24px;
           position: relative;
-          overflow: hidden;
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+          user-select: none;
         }
 
-        .receipt-print-wrapper::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 60%;
-          height: 180px;
-          background: radial-gradient(circle, rgba(91, 140, 255, 0.12) 0%, transparent 70%);
-          pointer-events: none;
+        /* Top Order Complete Header */
+        .order-complete-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 14px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          margin-bottom: 16px;
         }
 
-        /* Top Hero Header */
-        .receipt-header-hero {
-          text-align: center;
-          margin-bottom: 26px;
-          z-index: 2;
+        .status-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
-        .receipt-hero-title {
+        .status-check-circle {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(16, 185, 129, 0.15);
+          border: 1.5px solid #10b981;
+          color: #10b981;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-title-text {
           font-family: var(--font-display);
-          font-size: 28px;
+          font-size: 15px;
           font-weight: 800;
           color: #ffffff;
-          letter-spacing: -0.5px;
+          letter-spacing: -0.2px;
         }
 
-        .receipt-hero-title span {
-          color: #3b82f6;
-          background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .receipt-hero-subtitle {
-          font-size: 13px;
+        .status-sub-text {
+          font-size: 11px;
           color: var(--text-2);
-          margin-top: 4px;
-          font-weight: 500;
+          margin-top: 1px;
         }
 
-        /* Printer Stage */
-        .printer-stage-container {
+        .live-pulse-indicator {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 9.5px;
+          font-weight: 800;
+          color: var(--accent);
+          background: var(--accent-soft);
+          padding: 2px 7px;
+          border-radius: var(--radius-pill);
+          border: 1px solid rgba(180, 243, 41, 0.3);
+        }
+
+        .pulse-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--accent);
+          box-shadow: 0 0 6px var(--accent);
+        }
+
+        /* Printer Hardware Slot */
+        .printer-assembly {
           width: 100%;
-          max-width: 420px;
           display: flex;
           flex-direction: column;
           align-items: center;
           position: relative;
-          z-index: 3;
         }
 
-        /* 3D Curved Dark Metallic Printer Slot */
-        .printer-device-slot {
-          width: 320px;
-          height: 38px;
-          background: linear-gradient(180deg, #2a3140 0%, #151821 50%, #0c0e14 100%);
-          border-radius: 20px;
+        .printer-slot-bezel {
+          width: 290px;
+          height: 34px;
+          background: linear-gradient(180deg, #2b3140 0%, #161a22 55%, #0d0f15 100%);
+          border-radius: 18px;
           position: relative;
           z-index: 10;
-          box-shadow: 
-            0 12px 28px rgba(0, 0, 0, 0.7),
-            0 2px 4px rgba(255, 255, 255, 0.1) inset,
-            0 -2px 6px rgba(0, 0, 0, 0.8) inset;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6), inset 0 1.5px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 6px rgba(0, 0, 0, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        .printer-slit-hole {
-          width: 270px;
-          height: 6px;
-          background: #020305;
-          border-radius: 4px;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.9) inset;
+        .printer-slit-opening {
+          width: 245px;
+          height: 5px;
+          background: #000000;
+          border-radius: 3px;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.95);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .printer-led {
+        .printer-status-led {
           position: absolute;
-          left: 18px;
+          left: 14px;
           width: 6px;
           height: 6px;
           border-radius: 50%;
@@ -524,59 +539,67 @@ STATUS:       AUDITED & COMPLIANT ✓
 
         .led-ready {
           background: #10b981;
-          box-shadow: 0 0 8px #10b981;
+          box-shadow: 0 0 7px #10b981;
         }
 
-        .led-pulsing {
+        .led-active {
           background: var(--accent);
-          box-shadow: 0 0 10px var(--accent);
+          box-shadow: 0 0 9px var(--accent);
           animation: ledBlink 0.3s infinite alternate;
         }
 
-        @keyframes ledBlink {
-          from { opacity: 0.3; transform: scale(0.85); }
-          to { opacity: 1; transform: scale(1.2); }
-        }
-
-        .printer-hardware-label {
+        .printer-brand-emboss {
           position: absolute;
-          bottom: -15px;
-          font-size: 7.5px;
+          bottom: -13px;
+          font-size: 7px;
           font-weight: 800;
-          letter-spacing: 1.5px;
+          letter-spacing: 1.2px;
           color: rgba(255, 255, 255, 0.22);
-          text-transform: uppercase;
           pointer-events: none;
         }
 
-        /* Paper Motion Track */
-        .paper-motion-track {
-          width: 280px;
+        /* Narrow Slit Container with overflow:hidden */
+        .printer-mouth-window {
+          width: 260px;
           position: relative;
-          margin-top: -12px;
+          margin-top: -10px;
           z-index: 5;
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+          overflow: visible;
         }
 
-        /* Printing drop animation: slides out from the printer slot */
-        .paper-motion-track.is-printing {
-          animation: printSlideDown 2.0s cubic-bezier(0.12, 0.9, 0.25, 1) forwards;
+        /* Stepped mechanical feed animation */
+        .receipt-feed-carriage {
+          width: 100%;
           transform-origin: top center;
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes printSlideDown {
+        .receipt-feed-carriage.stepped-printing {
+          animation: mechanicalPrintSteps 2.1s cubic-bezier(0.1, 0.85, 0.25, 1) forwards;
+        }
+
+        /* Stepped / mechanical feeder keyframe curve */
+        @keyframes mechanicalPrintSteps {
           0% {
             clip-path: inset(0 0 95% 0);
-            transform: translateY(-80px) scaleY(0.4);
-            opacity: 0.7;
+            transform: translateY(-90px) scaleY(0.4);
+            opacity: 0.6;
           }
-          30% {
-            clip-path: inset(0 0 60% 0);
-            transform: translateY(-30px) scaleY(0.75);
+          20% {
+            clip-path: inset(0 0 75% 0);
+            transform: translateY(-60px) scaleY(0.65);
           }
-          65% {
-            clip-path: inset(0 0 20% 0);
-            transform: translateY(-6px) scaleY(0.95);
+          45% {
+            clip-path: inset(0 0 50% 0);
+            transform: translateY(-35px) scaleY(0.82);
+          }
+          70% {
+            clip-path: inset(0 0 25% 0);
+            transform: translateY(-12px) scaleY(0.94);
+          }
+          88% {
+            clip-path: inset(0 0 5% 0);
+            transform: translateY(-2px) scaleY(0.99);
           }
           100% {
             clip-path: inset(0 0 0 0);
@@ -585,440 +608,422 @@ STATUS:       AUDITED & COMPLIANT ✓
           }
         }
 
-        .paper-motion-track.is-torn {
-          transform: translateY(22px) rotate(-1.5deg);
-          filter: drop-shadow(0 25px 35px rgba(0, 0, 0, 0.6));
+        .receipt-feed-carriage.torn-detached {
+          transform: translateY(18px) rotate(-1.5deg);
+          filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.7));
         }
 
-        /* Thermal Receipt Paper */
-        .thermal-receipt-paper {
-          background: #fbfbfd;
+        /* Crisp White Thermal Paper Slip */
+        .thermal-paper-slip {
+          background: #fafafc;
           color: #171c26;
           border-radius: 4px 4px 0 0;
-          padding: 24px 20px 28px 20px;
-          box-shadow: 
-            0 18px 45px rgba(0, 0, 0, 0.45),
-            0 4px 12px rgba(0, 0, 0, 0.15),
-            inset 0 0 40px rgba(0, 0, 0, 0.02);
+          padding: 20px 16px 24px 16px;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.15);
           position: relative;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           user-select: text;
         }
 
-        .paper-top-slot-shadow {
+        /* Jagged / Dashed Top Perforation */
+        .jagged-top-perforation {
           position: absolute;
-          top: 0;
+          top: -6px;
           left: 0;
           right: 0;
-          height: 14px;
-          background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 100%);
-          pointer-events: none;
+          height: 6px;
+          background: #fafafc;
+          clip-path: polygon(
+            0% 100%, 3.33% 0%, 6.66% 100%, 10% 0%, 13.33% 100%, 16.66% 0%, 20% 100%, 23.33% 0%, 26.66% 100%, 30% 0%, 
+            33.33% 100%, 36.66% 0%, 40% 100%, 43.33% 0%, 46.66% 100%, 50% 0%, 53.33% 100%, 56.66% 0%, 60% 100%, 63.33% 0%, 
+            66.66% 100%, 70% 0%, 73.33% 100%, 76.66% 0%, 80% 100%, 83.33% 0%, 86.66% 100%, 90% 0%, 93.33% 100%, 96.66% 0%, 100% 100%
+          );
         }
 
-        /* Brand Row */
-        .receipt-brand-row {
+        /* Header Brand */
+        .slip-header-brand {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 12px;
-          margin-top: 4px;
+          margin-bottom: 10px;
+          margin-top: 2px;
         }
 
-        .receipt-logo-glyph {
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
-          background: #1d4ed8;
+        .slip-brand-left {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .slip-logo-glyph {
+          width: 22px;
+          height: 22px;
+          border-radius: 5px;
+          background: #1e293b;
           color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 900;
         }
 
-        .receipt-brand-name {
-          font-size: 11.5px;
+        .slip-brand-title {
+          font-size: 11px;
           font-weight: 900;
           color: #111827;
-          letter-spacing: 0.4px;
+          letter-spacing: 0.3px;
           font-family: var(--font-mono);
         }
 
-        .receipt-sub-tag {
-          font-size: 8px;
+        .slip-brand-subtitle {
+          font-size: 7.5px;
           font-weight: 700;
           color: #64748b;
           letter-spacing: 0.5px;
         }
 
-        /* Meta Grid */
-        .receipt-meta-grid {
+        /* Client Meta */
+        .slip-meta-table {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 9.5px;
+          font-size: 9px;
           font-family: var(--font-mono);
-          padding: 6px 0;
+          padding: 5px 0;
           border-top: 1px solid #e2e8f0;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
           color: #475569;
         }
 
-        .receipt-lbl {
+        .slip-lbl {
           font-weight: 800;
           margin-right: 4px;
           color: #1e293b;
         }
 
-        .receipt-val {
+        .slip-val {
           font-weight: 600;
         }
 
-        /* Big Headline & Stamp */
-        .receipt-headline-box {
+        /* Headline & Stamp */
+        .slip-headline-section {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          position: relative;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
 
-        .receipt-grand-headline {
-          font-size: 25px;
+        .slip-big-amount {
+          font-size: 23px;
           font-weight: 900;
           color: #0f172a;
           letter-spacing: -0.5px;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        .receipt-headline-sub {
-          font-size: 8.5px;
+        .slip-invoice-date {
+          font-size: 8px;
           font-weight: 700;
           color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.6px;
+          letter-spacing: 0.5px;
           margin-top: 2px;
           font-family: var(--font-mono);
         }
 
-        /* Slanted Red Stamp */
-        .receipt-stamp-paid {
-          border: 2px dashed #ef4444;
-          padding: 3px 6px;
+        .slip-stamp-paid {
+          border: 2px dashed #dc2626;
+          padding: 2px 5px;
           border-radius: 4px;
           transform: rotate(10deg);
-          background: rgba(239, 68, 68, 0.05);
-          box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15);
-        }
-
-        .stamp-inner {
+          background: rgba(220, 38, 38, 0.05);
           text-align: center;
         }
 
-        .stamp-word {
-          font-size: 11px;
+        .stamp-title {
+          font-size: 10px;
           font-weight: 900;
           color: #dc2626;
           letter-spacing: 1.5px;
           line-height: 1;
-          font-family: var(--font-display);
         }
 
-        .stamp-date {
+        .stamp-sub {
           font-size: 6.5px;
           font-weight: 800;
           color: #dc2626;
-          letter-spacing: 0.5px;
           margin-top: 2px;
         }
 
-        /* Dividers */
-        .receipt-dashed-divider {
+        /* Lines */
+        .slip-dotted-line {
           border-bottom: 1.5px dashed #cbd5e1;
-          margin: 10px 0;
+          margin: 8px 0;
         }
 
-        .receipt-solid-divider {
+        .slip-solid-line {
           border-bottom: 1.5px solid #0f172a;
-          margin: 10px 0 8px 0;
+          margin: 8px 0 6px 0;
         }
 
-        /* Item List */
-        .receipt-item-list {
+        /* Line Items */
+        .slip-line-items {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 5px;
         }
 
-        .receipt-item-row {
+        .slip-item-row {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          font-size: 9.5px;
+          font-size: 9px;
           font-family: var(--font-mono);
         }
 
-        .receipt-item-desc {
+        .slip-item-desc {
           color: #334155;
           font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 170px;
+          max-width: 155px;
         }
 
-        .receipt-qty {
-          font-weight: 800;
-          color: #0f172a;
-          margin-right: 2px;
-        }
-
-        .receipt-item-amount {
+        .slip-item-price {
           font-weight: 700;
           color: #0f172a;
-          text-align: right;
         }
 
-        /* Calculation Table */
-        .receipt-calc-table {
+        /* Totals */
+        .slip-totals-table {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 3px;
         }
 
-        .receipt-calc-row {
+        .slip-calc-line {
           display: flex;
           justify-content: space-between;
-          font-size: 9.5px;
+          font-size: 9px;
           color: #475569;
           font-family: var(--font-mono);
         }
 
-        .calc-lbl {
-          font-weight: 600;
-        }
-
-        .calc-val {
-          font-weight: 700;
-          color: #1e293b;
-        }
-
-        .discount-row {
+        .slip-discount-line {
           color: #dc2626;
         }
 
-        .discount-row .calc-val {
-          color: #dc2626;
-        }
-
-        /* Grand Total */
-        .receipt-total-row {
+        .slip-grand-total-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding-top: 2px;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
 
-        .total-title {
-          font-size: 11.5px;
+        .grand-lbl {
+          font-size: 11px;
           font-weight: 900;
           color: #0f172a;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.4px;
           font-family: var(--font-mono);
         }
 
-        .total-amount {
-          font-size: 13.5px;
+        .grand-val {
+          font-size: 13px;
           font-weight: 900;
           color: #0f172a;
           font-family: var(--font-mono);
         }
 
-        /* Footer Note */
-        .receipt-footer-note {
-          font-size: 7.5px;
+        .slip-thankyou-note {
+          font-size: 7px;
           font-weight: 800;
           color: #64748b;
           text-align: center;
-          letter-spacing: 0.6px;
-          text-transform: uppercase;
-          margin-bottom: 12px;
+          letter-spacing: 0.5px;
+          margin-bottom: 10px;
           font-family: var(--font-mono);
         }
 
         /* Barcode */
-        .receipt-barcode-box {
+        .slip-barcode-area {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 2px 0 6px 0;
+          padding: 2px 0 4px 0;
         }
 
-        .barcode-svg {
+        .thermal-barcode-svg {
           width: 100%;
-          height: 34px;
+          height: 30px;
         }
 
-        .receipt-tracking-code {
-          font-size: 8px;
+        .slip-barcode-text {
+          font-size: 7.5px;
           font-family: var(--font-mono);
           letter-spacing: 2px;
           font-weight: 700;
           color: #334155;
-          margin-top: 3px;
+          margin-top: 2px;
         }
 
-        /* Sawtooth Zigzag Perforated Torn Bottom */
-        .receipt-zigzag-bottom {
+        /* Jagged Bottom Perforation */
+        .jagged-bottom-perforation {
           position: absolute;
-          bottom: -10px;
+          bottom: -8px;
           left: 0;
           right: 0;
-          height: 10px;
-          background: #fbfbfd;
+          height: 8px;
+          background: #fafafc;
           clip-path: polygon(
-            0% 0%, 
-            2.5% 100%, 5% 0%, 7.5% 100%, 10% 0%, 12.5% 100%, 15% 0%, 17.5% 100%, 20% 0%, 
-            22.5% 100%, 25% 0%, 27.5% 100%, 30% 0%, 32.5% 100%, 35% 0%, 37.5% 100%, 40% 0%, 
-            42.5% 100%, 45% 0%, 47.5% 100%, 50% 0%, 52.5% 100%, 55% 0%, 57.5% 100%, 60% 0%, 
-            62.5% 100%, 65% 0%, 67.5% 100%, 70% 0%, 72.5% 100%, 75% 0%, 77.5% 100%, 80% 0%, 
-            82.5% 100%, 85% 0%, 87.5% 100%, 90% 0%, 92.5% 100%, 95% 0%, 97.5% 100%, 100% 0%
+            0% 0%, 3.33% 100%, 6.66% 0%, 10% 100%, 13.33% 0%, 16.66% 100%, 20% 0%, 23.33% 100%, 26.66% 0%, 30% 100%, 
+            33.33% 0%, 36.66% 100%, 40% 0%, 43.33% 100%, 46.66% 0%, 50% 100%, 53.33% 0%, 56.66% 100%, 60% 0%, 63.33% 100%, 
+            66.66% 0%, 70% 100%, 73.33% 0%, 76.66% 100%, 80% 0%, 83.33% 100%, 86.66% 0%, 90% 100%, 93.33% 0%, 96.66% 100%, 100% 0%
           );
-          filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
         }
 
-        /* Dynamic Status Section below paper */
-        .receipt-status-section {
+        /* Footer Status */
+        .slip-status-footer {
           text-align: center;
-          margin-top: 26px;
-          margin-bottom: 16px;
-          z-index: 2;
+          margin-top: 20px;
+          margin-bottom: 12px;
         }
 
-        .receipt-status-headline {
+        .status-footer-headline {
           font-family: var(--font-display);
-          font-size: 20px;
+          font-size: 16px;
           font-weight: 800;
           color: #ffffff;
         }
 
-        .receipt-status-sub {
-          font-size: 12.5px;
+        .status-footer-sub {
+          font-size: 11.5px;
           color: var(--text-2);
-          margin-top: 3px;
+          margin-top: 2px;
         }
 
-        /* Action Buttons Row */
-        .receipt-buttons-bar {
+        /* Buttons */
+        .slip-action-buttons {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          z-index: 2;
+          gap: 8px;
+          width: 100%;
           flex-wrap: wrap;
         }
 
-        .receipt-btn {
+        .action-btn-print {
+          flex: 1;
+          min-width: 120px;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 20px;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 12px;
           border-radius: var(--radius-pill);
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .btn-print {
           background: #faf8f5;
           color: #171c26;
-          box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          cursor: pointer;
+          transition: all 0.15s ease;
         }
 
-        .btn-print:hover:not(:disabled) {
+        .action-btn-print:hover:not(:disabled) {
           background: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+          transform: translateY(-1.5px);
         }
 
-        .btn-print:disabled {
-          opacity: 0.7;
+        .action-btn-print:disabled {
+          opacity: 0.65;
           cursor: not-allowed;
         }
 
-        .btn-tear {
-          background: rgba(255, 255, 255, 0.05);
+        .action-btn-tear {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border-radius: var(--radius-pill);
+          font-size: 12px;
+          font-weight: 700;
+          background: rgba(255, 255, 255, 0.06);
           color: #ffffff;
           border: 1px dashed rgba(255, 255, 255, 0.25);
+          cursor: pointer;
+          transition: all 0.15s ease;
         }
 
-        .btn-tear:hover {
+        .action-btn-tear:hover {
           background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.4);
-          transform: translateY(-2px);
         }
 
-        .btn-active-torn {
+        .btn-torn-active {
           background: rgba(239, 68, 68, 0.15);
           border-color: #ef4444;
           color: #fca5a5;
         }
 
-        .btn-copy {
-          background: rgba(255, 255, 255, 0.05);
+        .action-btn-copy {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          padding: 8px 12px;
+          border-radius: var(--radius-pill);
+          font-size: 12px;
+          font-weight: 700;
+          background: rgba(255, 255, 255, 0.06);
           color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          cursor: pointer;
+          transition: all 0.15s ease;
         }
 
-        .btn-copy:hover {
+        .action-btn-copy:hover {
           background: rgba(255, 255, 255, 0.1);
-          transform: translateY(-2px);
         }
 
-        .btn-icon {
-          font-size: 14px;
+        .btn-icon-symbol {
+          font-size: 13px;
         }
 
-        /* Micro Actions */
-        .receipt-micro-actions {
+        /* Micro Toggles */
+        .slip-micro-toggles {
           display: flex;
           align-items: center;
-          gap: 16px;
-          margin-top: 18px;
-          font-size: 11px;
-          z-index: 2;
+          justify-content: space-between;
+          width: 100%;
+          margin-top: 14px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          font-size: 10.5px;
         }
 
-        .sound-toggle-btn {
+        .micro-audio-toggle {
           background: transparent;
           border: none;
           color: var(--text-2);
           cursor: pointer;
-          font-size: 11px;
-          transition: color 0.15s;
         }
 
-        .sound-toggle-btn:hover {
+        .micro-audio-toggle:hover {
           color: #ffffff;
         }
 
-        .deep-dive-link {
+        .micro-link-nav {
           background: transparent;
           border: none;
           color: var(--accent);
-          cursor: pointer;
           font-weight: 700;
-          font-size: 11px;
-          transition: opacity 0.15s;
+          cursor: pointer;
         }
 
-        .deep-dive-link:hover {
-          opacity: 0.8;
+        .micro-link-nav:hover {
           text-decoration: underline;
         }
       `}</style>
