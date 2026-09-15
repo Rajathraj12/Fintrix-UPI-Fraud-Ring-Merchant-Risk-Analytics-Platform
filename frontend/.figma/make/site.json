@@ -1,0 +1,11 @@
+{
+  "description": "This financial analytics platform offers advanced fraud detection and real-time monitoring for businesses, enhancing security and data insights with a sleek, user-friendly interface.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  },
+  "title": "Fintrex"
+}

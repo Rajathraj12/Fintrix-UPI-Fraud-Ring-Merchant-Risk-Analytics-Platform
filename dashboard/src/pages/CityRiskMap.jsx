@@ -23,6 +23,29 @@ const CITY_META = {
 const fmt = (n) => n >= 1e7 ? `${(n/1e7).toFixed(2)}Cr` : n >= 1e5 ? `${(n/1e5).toFixed(2)}L` : n >= 1e3 ? `${(n/1e3).toFixed(1)}K` : String(Math.round(n));
 const fmtINR = (n) => `₹${fmt(n)}`;
 
+function describeArc(cx, cy, r, R, startAngle, endAngle) {
+  const angleDiff = endAngle - startAngle;
+  let endA = endAngle;
+  if (angleDiff >= 2 * Math.PI - 0.001) endA = startAngle + 2 * Math.PI - 0.001;
+  const x1 = cx + R * Math.cos(startAngle);
+  const y1 = cy + R * Math.sin(startAngle);
+  const x2 = cx + R * Math.cos(endA);
+  const y2 = cy + R * Math.sin(endA);
+  const x3 = cx + r * Math.cos(endA);
+  const y3 = cy + r * Math.sin(endA);
+  const x4 = cx + r * Math.cos(startAngle);
+  const y4 = cy + r * Math.sin(startAngle);
+  const largeArc = angleDiff > Math.PI ? 1 : 0;
+  return [
+    `M ${x1.toFixed(2)} ${y1.toFixed(2)}`,
+    `A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`,
+    `L ${x3.toFixed(2)} ${y3.toFixed(2)}`,
+    `A ${r} ${r} 0 ${largeArc} 0 ${x4.toFixed(2)} ${y4.toFixed(2)}`,
+    'Z'
+  ].join(' ');
+}
+
+
 // Clean Free Tile Providers without watermarks
 const TILE_PROVIDERS = {
   dark: {
@@ -57,7 +80,8 @@ export default function CityRiskMap() {
   const [selectedCity, setSelectedCity] = useState('Mumbai');
   const [selectedState, setSelectedState] = useState('ALL');
   const [filterRisk, setFilterRisk] = useState('ALL');
-  const [mapTheme, setMapTheme] = useState('dark');
+  const [mapTheme, setMapTheme] = useState('osm');
+  const [hoveredCatIdx, setHoveredCatIdx] = useState(null);
 
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -268,8 +292,9 @@ export default function CityRiskMap() {
         zoom: 5,
         minZoom: 4,
         maxZoom: 14,
-        zoomControl: true,
+        zoomControl: false,
       });
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const tile = L.tileLayer(TILE_PROVIDERS[mapTheme].url, {
         attribution: TILE_PROVIDERS[mapTheme].attribution,
@@ -461,40 +486,27 @@ export default function CityRiskMap() {
     }));
   }, [currentCityData]);
 
+  const svgDonutSlices = useMemo(() => {
+    let currentAngle = -Math.PI / 2;
+    const colors = ['#00e676', '#651fff', '#ff9100', '#f50057', '#00b0ff'];
+    return topCategories.map((c, i) => {
+      const sliceAngle = (c.pct / 100) * (2 * Math.PI);
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
+      currentAngle = endAngle;
+      const midAngle = (startAngle + endAngle) / 2;
+      const dx = Math.cos(midAngle) * 8; 
+      const dy = Math.sin(midAngle) * 8;
+      return { ...c, startAngle, endAngle, dx, dy, color: colors[i % colors.length] };
+    });
+  }, [topCategories]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Top Controls & State Metrics Bar */}
       <div className="card" style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-          {/* Metric Selector Pills */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: 'var(--text-2)', marginRight: 4 }}>
-              STATE COLOR METRIC:
-            </span>
-            {METRIC_OPTIONS.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedMetric(m.id)}
-                style={{
-                  background: selectedMetric === m.id ? 'rgba(91,140,255,0.18)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${selectedMetric === m.id ? 'var(--accent)' : 'var(--border)'}`,
-                  color: selectedMetric === m.id ? '#ffffff' : 'var(--text-1)',
-                  padding: '6px 13px',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: selectedMetric === m.id ? 700 : 500,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.color }} />
-                {m.label}
-              </button>
-            ))}
-          </div>
+
 
           {/* Map Layer Theme & State Filters */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -698,10 +710,62 @@ export default function CityRiskMap() {
               </div>
 
               {/* City Risk Score Dial */}
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600, textTransform: 'uppercase' }}>City Risk Index</div>
-                <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentCityData.riskColor }}>
-                  {currentCityData.riskScore}<span style={{ fontSize: 13, color: 'var(--text-2)' }}>/100</span>
+              <div style={{ textAlign: 'center', width: 140, marginTop: -5 }}>
+                <div style={{ position: 'relative', width: '100%', height: 80 }}>
+                  <svg viewBox="0 0 100 70" style={{ overflow: 'visible', dropShadow: `0 4px 12px ${currentCityData.riskColor}44`, width: '100%', height: '100%' }}>
+                    
+                    {/* Tick Marks */}
+                    <path 
+                      d="M 10 55 A 40 40 0 0 1 90 55" 
+                      fill="none" 
+                      stroke="var(--text-2)" 
+                      strokeWidth="4" 
+                      strokeDasharray="1 11.566"
+                      opacity="0.3"
+                    />
+
+                    {/* Background track */}
+                    <path 
+                      d="M 10 55 A 40 40 0 0 1 90 55" 
+                      fill="none" 
+                      stroke="var(--bg-3)" 
+                      strokeWidth="8" 
+                      strokeLinecap="round" 
+                    />
+                    
+                    {/* Value track */}
+                    <path 
+                      d="M 10 55 A 40 40 0 0 1 90 55" 
+                      fill="none" 
+                      stroke={currentCityData.riskColor} 
+                      strokeWidth="8" 
+                      strokeLinecap="round" 
+                      strokeDasharray="125.66" 
+                      strokeDashoffset={125.66 - (125.66 * (currentCityData.riskScore / 100))}
+                      style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+                    />
+
+                    {/* Labels (0, 50, 100) */}
+                    <text x="10" y="68" fontSize="7" fill="var(--text-2)" textAnchor="middle" fontWeight="600">0</text>
+                    <text x="50" y="8" fontSize="7" fill="var(--text-2)" textAnchor="middle" fontWeight="600">50</text>
+                    <text x="90" y="68" fontSize="7" fill="var(--text-2)" textAnchor="middle" fontWeight="600">100</text>
+
+                    {/* Needle / Dial */}
+                    <g transform={`rotate(${currentCityData.riskScore * 1.8}, 50, 55)`} style={{ transition: 'transform 1s ease-out' }}>
+                      <path d="M 50 51 L 18 55 L 50 59 Z" fill={currentCityData.riskColor} />
+                      <circle cx="50" cy="55" r="5" fill="var(--bg-1)" stroke={currentCityData.riskColor} strokeWidth="2.5" />
+                    </g>
+                  </svg>
+                </div>
+
+                {/* Score Text Below */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 8 }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentCityData.riskColor, lineHeight: 1, textShadow: `0 2px 10px ${currentCityData.riskColor}66` }}>
+                    {currentCityData.riskScore}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.5px' }}>
+                    Risk Index
+                  </div>
                 </div>
               </div>
             </div>
@@ -750,64 +814,160 @@ export default function CityRiskMap() {
             </div>
           </div>
 
-          {/* Top Merchant Categories in this City */}
-          <div className="card" style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-0)', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Top Merchant Categories in this City (Pie/Donut Chart) */}
+          <div className="card" style={{ padding: '20px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-0)', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>Top Merchant Categories</span>
-              <span style={{ fontSize: 10, color: 'var(--text-2)' }}>Count & Share</span>
+              <span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--bg-1)', padding: '4px 8px', borderRadius: 4 }}>Share by Volume</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {topCategories.map((cat, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
-                    <span style={{ color: 'var(--text-1)' }}>{cat.name}</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>
-                      {cat.count} ({cat.pct}%)
-                    </span>
-                  </div>
-                  <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${cat.pct}%`,
-                      background: 'linear-gradient(90deg, var(--accent), var(--purple))',
-                      borderRadius: 3
-                    }} />
-                  </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 30, justifyContent: 'space-between', padding: '10px 0' }}>
+              {/* Interactive SVG Donut Chart */}
+              <div 
+                style={{ position: 'relative', width: 170, height: 170, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseLeave={() => setHoveredCatIdx(null)}
+              >
+                <svg width="170" height="170" viewBox="0 0 170 170" style={{ overflow: 'visible', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }}>
+                  {svgDonutSlices.map((slice, i) => {
+                    const isHovered = hoveredCatIdx === i;
+                    const pathD = describeArc(85, 85, 52, 82, slice.startAngle, slice.endAngle);
+                    return (
+                      <g
+                        key={i}
+                        style={{
+                          transform: isHovered ? `translate(${slice.dx}px, ${slice.dy}px) scale(1.05)` : 'translate(0px, 0px) scale(1)',
+                          transformOrigin: '85px 85px',
+                          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={() => setHoveredCatIdx(i)}
+                      >
+                        <path 
+                          d={pathD} 
+                          fill={slice.color} 
+                          fillOpacity={hoveredCatIdx !== null ? (isHovered ? 1 : 0.4) : 0.9} 
+                          stroke={isHovered ? '#fff' : '#1a1e29'} 
+                          strokeWidth={isHovered ? 2.5 : 1.5} 
+                          strokeLinejoin="round" 
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+                {/* Donut Hole */}
+                <div style={{
+                  position: 'absolute', top: '18%', left: '18%', width: '64%', height: '64%',
+                  background: 'var(--bg-0)', borderRadius: '50%',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.6)', pointerEvents: 'none', padding: 8
+                }}>
+                  {hoveredCatIdx !== null ? (
+                    <>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: svgDonutSlices[hoveredCatIdx].color, lineHeight: 1.1, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {svgDonutSlices[hoveredCatIdx].name}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)', marginTop: 4 }}>
+                        {svgDonutSlices[hoveredCatIdx].pct}%
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>
+                      Top<br/>Categories
+                    </div>
+                  )}
                 </div>
-              ))}
+              </div>
+
+              {/* Legend */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {svgDonutSlices.map((cat, i) => {
+                  const isHovered = hoveredCatIdx === i;
+                  return (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '6px 10px', borderRadius: 8,
+                        background: isHovered ? 'rgba(255,255,255,0.08)' : 'transparent',
+                        cursor: 'pointer', transition: 'all 0.2s ease',
+                        boxShadow: isHovered ? `0 4px 12px rgba(0,0,0,0.2)` : 'none'
+                      }}
+                      onMouseEnter={() => setHoveredCatIdx(i)}
+                      onMouseLeave={() => setHoveredCatIdx(null)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          width: 12, height: 12, borderRadius: '50%', background: cat.color, 
+                          boxShadow: isHovered ? `0 0 10px ${cat.color}` : 'none' 
+                        }} />
+                        <span style={{ fontSize: 13, color: isHovered ? '#fff' : 'var(--text-1)', fontWeight: isHovered ? 700 : 500, transition: 'color 0.2s' }}>
+                          {cat.name}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: isHovered ? '#fff' : 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>
+                        {cat.pct}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Dispute Reasons & High Severity Fraud */}
-          <div className="card" style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-0)', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="card" style={{ padding: '20px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-0)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>Dispute Root Causes</span>
               <span style={{
                 fontSize: 10,
                 color: currentCityData.highSeverity > 35 ? 'var(--red)' : 'var(--amber)',
-                fontWeight: 600
+                fontWeight: 600,
+                background: currentCityData.highSeverity > 35 ? 'rgba(244,67,54,0.1)' : 'rgba(255,193,7,0.1)',
+                padding: '4px 8px',
+                borderRadius: 4
               }}>
                 {currentCityData.highSeverity} High-Sev Cases
               </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {topReasons.map((r, i) => (
-                <div key={i} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: 'var(--bg-1)',
-                  padding: '7px 10px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border)'
-                }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-1)' }}>{r.code}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>{r.count}</span>
-                    <span style={{ fontSize: 9, color: 'var(--text-2)' }}>({r.pct}%)</span>
+            
+            {/* Creative Grid Layout for Causes */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+              {topReasons.map((r, i) => {
+                const intensity = parseFloat(r.pct) / 30; // normalized for opacity (assuming max pct around 30%)
+                const isHighRisk = r.code.includes('FRAUD') || r.code.includes('UNAUTH');
+                const accentColor = isHighRisk ? 'var(--red)' : 'var(--accent)';
+                
+                return (
+                  <div key={i} className="interactive-cause-card" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    background: `linear-gradient(135deg, var(--bg-1), rgba(255,255,255,0.02))`,
+                    padding: '12px',
+                    borderRadius: 12,
+                    border: `1px solid rgba(255, 255, 255, 0.08)`,
+                    borderLeft: `3px solid ${accentColor}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: `0 4px 12px rgba(0,0,0,0.2)`
+                  }}>
+                    {/* Background glow based on intensity */}
+                    <div style={{
+                      position: 'absolute', top: -20, right: -20, width: 60, height: 60, 
+                      background: accentColor, filter: 'blur(30px)', opacity: intensity * 0.5, borderRadius: '50%'
+                    }} />
+                    
+                    <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.3, zIndex: 1, marginBottom: 8 }}>
+                      {r.code.replace(/_/g, ' ')}
+                    </span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, zIndex: 1 }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>{r.count}</span>
+                      <span style={{ fontSize: 11, color: accentColor, fontWeight: 700 }}>({r.pct}%)</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -838,42 +998,58 @@ export default function CityRiskMap() {
                       mapInstanceRef.current.flyTo([c.lat, c.lng], 6.5, { duration: 1.2 });
                     }
                   }}
+                  className="interactive-cause-card"
                   style={{
-                    background: isSelected ? 'rgba(91,140,255,0.12)' : 'var(--bg-1)',
-                    border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: 10,
-                    padding: '12px 14px',
+                    background: isSelected ? `linear-gradient(145deg, rgba(255,255,255,0.05), ${st.riskColor}11)` : 'linear-gradient(145deg, var(--bg-1), rgba(0,0,0,0.2))',
+                    border: `1px solid rgba(255,255,255,0.08)`,
+                    borderTop: `3px solid ${st.riskColor}`,
+                    borderRadius: 12,
+                    padding: '16px',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: isSelected ? `0 8px 24px ${st.riskColor}33` : '0 4px 12px rgba(0,0,0,0.2)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{st.state}</span>
+                  {/* Subtle Background Glow for Selected State */}
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute', top: -30, right: -30, width: 100, height: 100,
+                      background: st.riskColor, filter: 'blur(40px)', opacity: 0.15, borderRadius: '50%'
+                    }} />
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, zIndex: 1, position: 'relative' }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', letterSpacing: '0.2px' }}>{st.state}</span>
                     <span style={{
-                      fontSize: 9.5,
+                      fontSize: 10,
                       fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: `${st.riskColor}22`,
+                      padding: '3px 8px',
+                      borderRadius: 20,
+                      background: `rgba(255,255,255,0.05)`,
                       color: st.riskColor,
-                      border: `1px solid ${st.riskColor}44`
+                      border: `1px solid ${st.riskColor}66`,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
                       {st.riskTier}
                     </span>
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 8 }}>
-                    Cities: {st.cities.join(', ')}
+                  
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 16, zIndex: 1, position: 'relative', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ opacity: 0.6 }}>Cities:</span> <span style={{ color: 'var(--text-1)' }}>{st.cities.join(', ')}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', zIndex: 1, position: 'relative' }}>
                     <div>
-                      <div style={{ fontSize: 9.5, color: 'var(--text-2)' }}>Dispute Rate</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: st.riskColor, fontFamily: 'var(--font-mono)' }}>
-                        {st.disputeRate.toFixed(1)}%
+                      <div style={{ fontSize: 10, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px', marginBottom: 2 }}>Dispute Rate</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: st.riskColor, fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                        {st.disputeRate.toFixed(1)}<span style={{ fontSize: 14 }}>%</span>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 9.5, color: 'var(--text-2)' }}>Txn Volume</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px', marginBottom: 2 }}>Txn Volume</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-0)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
                         {fmtINR(st.volume)}
                       </div>
                     </div>

@@ -6,20 +6,28 @@ import CityRiskMap from './pages/CityRiskMap';
 import DisputeIntel from './pages/DisputeIntel';
 import MerchantIntelligence from './pages/MerchantIntelligence';
 import IdentityIntegrity from './pages/IdentityIntegrity';
-import AIInsights from './pages/AIInsights';
-
+import FintrixAIChatPage from './pages/FintrixAIChatPage';
+import fintrixLogo from './assets/Fintrix logo.png';
 const PAGE_META = {
   overview:   { title: 'Overview',               sub: 'High-level financial health and transaction velocity' },
   map:        { title: 'India City Risk Map',     sub: 'Geographic distribution, city-level chargeback rates, and regional hotspots' },
   dispute:    { title: 'Disputes & Chargebacks',  sub: 'Chargeback patterns, reason codes, and resolution backlog' },
   merchant:   { title: 'Merchant Analytics',      sub: 'Portfolio composition, risk tiers, and category breakdown' },
   integrity:  { title: 'Data Quality & KYC',      sub: 'Record consistency, KYC verification, and anomaly detection' },
-  insights:   { title: 'Risk Insights',           sub: 'Data-driven risk findings with recommended actions' },
+  ai:         { title: 'Fintrix AI Engine',       sub: 'Conversational financial intelligence and forensics' },
+
 };
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Home from './pages/Home';
+import About from './pages/About';
 
 const AppContent = () => {
   const { loading, error, data } = useContext(DataContext);
-  const [activePage, setActivePage] = useState('overview');
+  const [activePage, setActivePage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('page') || 'overview';
+  });
 
   if (error) {
     return (
@@ -34,14 +42,14 @@ const AppContent = () => {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 14,
-          background: 'var(--accent)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20, color: '#000000',
-          boxShadow: '0 0 30px rgba(180, 243, 41, 0.5)',
+          width: 56, height: 56, borderRadius: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
           animation: 'pulse 1.5s infinite',
-        }}>✦</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#ffffff' }}>Sentinel</div>
+          overflow: 'hidden'
+        }}>
+          <img src={fintrixLogo} alt="Fintrix Mascot" style={{ height: 56, width: 'auto', objectFit: 'cover', objectPosition: 'left center' }} />
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#ffffff' }}>Fintrix</div>
         <div style={{ color: 'var(--text-2)', fontSize: 13 }}>Initializing telemetry & datasets…</div>
         <style>{`@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } }`}</style>
       </div>
@@ -51,7 +59,7 @@ const AppContent = () => {
   const meta = PAGE_META[activePage] || PAGE_META['overview'];
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={activePage === 'ai' ? { height: '100vh', paddingBottom: '16px', display: 'flex', flexDirection: 'column' } : {}}>
       {/* Floating Capsule Top Navigation */}
       <TopNav
         activePage={activePage}
@@ -62,52 +70,40 @@ const AppContent = () => {
       />
 
       {/* Page Title & Action Header */}
-      <div className="page-header-row">
-        <div className="page-title-group">
-          <button
-            className="back-btn-capsule"
-            onClick={() => setActivePage('overview')}
-            title="Back to Overview"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-          </button>
-          <div>
-            <h1 className="main-page-title">{meta.title}</h1>
-            <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 2 }}>{meta.sub}</div>
+      {activePage !== 'ai' && (
+        <div className="page-header-row">
+          <div className="page-title-group">
+            <button
+              className="back-btn-capsule"
+              onClick={() => setActivePage('overview')}
+              title="Back to Overview"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+              </svg>
+            </button>
+            <div>
+              <h1 className="main-page-title">{meta.title}</h1>
+            </div>
           </div>
-        </div>
 
-        <div className="page-header-actions">
-          <div style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'var(--text-2)', marginRight: 6 }}>
-            {data.upi?.length?.toLocaleString() || 0} txns · {data.chargebacks?.length?.toLocaleString() || 0} disputes
+          <div className="page-header-actions">
+            <div style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>
+              {data.upi?.length?.toLocaleString() || 0} txns · {data.chargebacks?.length?.toLocaleString() || 0} disputes
+            </div>
           </div>
-          <button className="btn-secondary-capsule">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-              <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-              <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-            </svg>
-            Filters
-          </button>
-          <button className="btn-primary-lime">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Live Monitor
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Main Page Content */}
-      <main className="main-content-body">
+      <main className="main-content-body" style={activePage === 'ai' ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : {}}>
         {activePage === 'overview'   && <Overview onNavigate={setActivePage} />}
         {activePage === 'map'        && <CityRiskMap />}
         {activePage === 'dispute'    && <DisputeIntel />}
         {activePage === 'merchant'   && <MerchantIntelligence />}
         {activePage === 'integrity'  && <IdentityIntegrity />}
-        {activePage === 'insights'   && <AIInsights />}
+        {activePage === 'ai'         && <FintrixAIChatPage onNavigate={setActivePage} />}
+
       </main>
     </div>
   );
@@ -116,7 +112,14 @@ const AppContent = () => {
 export default function App() {
   return (
     <DataProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/dashboard" element={<AppContent />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </DataProvider>
   );
 }

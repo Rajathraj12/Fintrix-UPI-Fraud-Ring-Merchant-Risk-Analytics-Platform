@@ -1,0 +1,133 @@
+/* ============================================================
+   FINTRIX AI CHATBOT / INTELLIGENCE MODULE STYLING
+   High-density, technical, forensic terminal aesthetic.
+   ============================================================ */
+
+/* ---- Main Container Layout ---- */
+.fintrix-ai-chat-root {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 160px);
+  min-height: 600px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  gap: 16px;
+  position: relative;
+}
+
+.fintrix-chat-workspace-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 280px;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+@media (max-width: 1200px) {
+  .fintrix-chat-workspace-grid {
+    grid-template-columns: auto 1fr;
+  }
+  .fintrix-telemetry-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .fintrix-chat-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .fintrix-chat-history-sidebar {
+    display: none !important;
+  }
+}
+
+/* ---- Conversation Stream Scrollbox ---- */
+.fintrix-messages-scroll-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 12px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.fintrix-messages-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+.fintrix-messages-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.fintrix-messages-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Suggestion Cards Hover Effects ---- */
+.fintrix-suggestion-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(180, 243, 41, 0.4) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(180, 243, 41, 0.15);
+}
+
+.fintrix-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent) !important;
+}
+
+.fintrix-chip-btn:hover {
+  background: rgba(180, 243, 41, 0.1) !important;
+  border-color: rgba(180, 243, 41, 0.3) !important;
+  color: var(--accent) !important;
+}
+
+.fintrix-dashboard-link-btn:hover {
+  background: rgba(180, 243, 41, 0.12) !important;
+  border-color: rgba(180, 243, 41, 0.4) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(180, 243, 41, 0.2);
+}
+
+/* ---- Composer Focus & Active Ring ---- */
+.fintrix-composer-box:focus-within {
+  border-color: rgba(180, 243, 41, 0.5) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(180, 243, 41, 0.2) !important;
+}
+
+/* ---- Pulse Animations ---- */
+@keyframes pulse-danger {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 82, 113, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 14px 2px rgba(255, 82, 113, 0.6);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fintrix-loading-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* ---- Telemetry Live Activity Glow ---- */
+.fintrix-tool-activity {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

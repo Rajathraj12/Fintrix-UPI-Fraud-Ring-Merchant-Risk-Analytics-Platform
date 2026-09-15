@@ -425,7 +425,13 @@ export default function Overview({ onNavigate }) {
   const totalCb = cb.length;
   const cbRate = pct(totalCb, totalTxns);
   const disputedAmt = cb.reduce((s, c) => s + (c.disputed_amount || 0), 0);
+  const openCb = useMemo(() => cb.filter(c => c.resolution_status === 'OPEN'), [cb]);
+  const openCbAmt = useMemo(() => openCb.reduce((s, c) => s + (c.disputed_amount || 0), 0), [openCb]);
+  const closedCb = useMemo(() => cb.filter(c => c.resolution_status === 'CLOSED'), [cb]);
+  const closedCbAmt = useMemo(() => closedCb.reduce((s, c) => s + (c.disputed_amount || 0), 0), [closedCb]);
   const activeMerchants = merchants.filter(m => m.merchant_status === 'ACTIVE').length;
+  const suspendedMerchants = merchants.filter(m => m.merchant_status === 'SUSPENDED').length;
+  const avgTicket = totalTxns > 0 ? totalVol / totalTxns : 0;
 
   // Daily paired data with dates for interactive chart
   const dailyTimeSeriesData = useMemo(() => {
@@ -463,25 +469,84 @@ export default function Overview({ onNavigate }) {
     });
   }, [txns, cb]);
 
-  // Sample transactions list matching the invoice table
-  const sampleInvoices = useMemo(() => {
-    const avatarList = ['👨‍💼', '👩‍💼', '🧔', '🧑‍🔬', '👱‍♀️', '👨‍💻'];
-    const statusTypes = ['Unsent', 'Viewed', 'Overdue', 'Unsent', 'Viewed'];
+  const [streamFilter, setStreamFilter] = useState('ALL'); // 'ALL' | 'OPEN' | 'CRITICAL' | 'CLOSED'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDisputeId, setSelectedDisputeId] = useState(null);
 
-    return txns.slice(0, 6).map((t, idx) => ({
-      id: `#${(400 + idx * 6)}-${String(idx * 11 + 2).padStart(3, '0')}`,
-      rawId: t.txn_id,
-      merchantId: t.merchant_id,
-      days: `in ${idx * 4 + 2} days`,
-      status: statusTypes[idx % statusTypes.length],
-      amount: t.amount || 53154,
-      avatar: avatarList[idx % avatarList.length],
-      name: `Merchant #${(t.merchant_id || 'M-101').slice(-4)}`,
-      customer: `User ${(t.user_id || 'U-902').slice(-4)}`
-    }));
-  }, [txns]);
+  const merchantMap = useMemo(() => {
+    const map = {};
+    merchants.forEach(m => {
+      if (m.merchant_id) map[m.merchant_id] = m;
+    });
+    return map;
+  }, [merchants]);
 
-  const activeInvoice = selectedTxn || sampleInvoices[2] || sampleInvoices[0];
+  const enrichedDisputes = useMemo(() => {
+    return cb.map((c, idx) => {
+      const m = merchantMap[c.merchant_id] || {
+        merchant_name: `Merchant #${(c.merchant_id || 'M-101').slice(-4)}`,
+        merchant_category: 'Digital Services',
+        city: 'Mumbai',
+        state: 'Maharashtra'
+      };
+      return {
+        ...c,
+        id: c.complaint_id || `CB-${c.txn_id?.slice(-5) || (10490 + idx)}`,
+        complaintId: c.complaint_id || `CB-${c.txn_id?.slice(-5) || (10490 + idx)}`,
+        merchantName: m.merchant_name,
+        merchantCat: m.merchant_category,
+        city: m.city || 'Mumbai',
+        state: m.state || 'Maharashtra',
+        amount: c.disputed_amount || 4500,
+        reason: c.reason_code || 'Unauthorized Transaction',
+        severity: (c.severity || 'MEDIUM').toUpperCase(),
+        status: (c.resolution_status || 'OPEN').toUpperCase(),
+        channel: c.channel || 'IVR',
+        date: c.reported_timestamp?.slice(0, 10) || '2026-11-14',
+        text: c.complaint_text || `Customer reported disputed transaction via ${c.channel || 'IVR'}. Escalated for bank response and chargeback mitigation.`
+      };
+    });
+  }, [cb, merchantMap]);
+
+  const filteredDisputes = useMemo(() => {
+    return enrichedDisputes.filter(d => {
+      if (streamFilter === 'OPEN' && d.status !== 'OPEN') return false;
+      if (streamFilter === 'CLOSED' && d.status !== 'CLOSED') return false;
+      if (streamFilter === 'CRITICAL' && !['CRITICAL', 'HIGH'].includes(d.severity)) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          d.complaintId.toLowerCase().includes(q) ||
+          d.merchantName.toLowerCase().includes(q) ||
+          d.reason.toLowerCase().includes(q) ||
+          d.city.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [enrichedDisputes, streamFilter, searchQuery]);
+
+  const activeDispute = useMemo(() => {
+    if (selectedDisputeId) {
+      const found = enrichedDisputes.find(d => d.id === selectedDisputeId);
+      if (found) return found;
+    }
+    return filteredDisputes[0] || enrichedDisputes[0] || {
+      id: 'CB-10492',
+      complaintId: 'CB-10492',
+      amount: 15400,
+      merchantName: 'Swiggy Foods',
+      merchantCat: 'Food Delivery',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      reason: 'Unauthorized Transaction',
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      channel: 'IVR',
+      date: '2026-11-14',
+      text: 'Money deducted from UPI but merchant says payment failed. Double deduction dispute initiated.'
+    };
+  }, [selectedDisputeId, filteredDisputes, enrichedDisputes]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -494,111 +559,102 @@ export default function Overview({ onNavigate }) {
       }}>
         {/* Left Column: KPIs & Daily Velocity Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* 1. Grand Hero KPI Container with Lime Payout Widget & Timeline */}
+          {/* 1. Clear & Contextual Grand Hero KPI Container */}
           <div className="hero-kpi-card">
-            {/* Col 1: Overdue / Disputed Amount */}
+            {/* Col 1: Total Disputed & Resolution Backlog */}
             <div className="kpi-col">
               <div>
-                <div className="kpi-title-small">Disputed & In-Review</div>
-                <div className="kpi-big-value">
+                <div className="kpi-title-small">Total Disputed Volume</div>
+                <div className="kpi-big-value" style={{ color: '#ffffff' }}>
                   {fmtINR(disputedAmt)}
                 </div>
               </div>
-              <div>
-                <div className="kpi-timeline-row">
-                  <div className="timeline-step">
-                    <span className="timeline-step-label">Sep</span>
-                    <div className="timeline-step-bar" />
-                  </div>
-                  <div className="timeline-step">
-                    <span className="timeline-step-label">Oct</span>
-                    <div className="timeline-step-bar" />
-                  </div>
-                  <div className="timeline-step">
-                    <span className="timeline-step-label" style={{ color: 'var(--accent)' }}>Nov</span>
-                    <div className="timeline-step-bar active" />
-                  </div>
-                  <div className="timeline-step">
-                    <span className="timeline-step-label">Dec</span>
-                    <div className="timeline-step-bar" />
-                  </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
+                  <span><b style={{ color: '#d97706' }}>●</b> Open: {fmtINR(openCbAmt)} ({openCb.length})</span>
+                  <span><b style={{ color: '#16a34a' }}>●</b> Closed: {fmtINR(closedCbAmt)}</span>
                 </div>
-                <div className="avatar-stack">
-                  <div className="avatar-stack-item">🧑‍💼</div>
-                  <div className="avatar-stack-item">👩‍💼</div>
-                  <div className="avatar-stack-item">🧔</div>
-                  <div className="avatar-stack-item">👩‍🔬</div>
-                  <div className="avatar-stack-item">+8</div>
+                {/* Visual Ratio Bar */}
+                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
+                  <div style={{ width: '53.3%', background: '#d97706' }} title="53.3% Open" />
+                  <div style={{ width: '30.9%', background: '#16a34a' }} title="30.9% Closed" />
+                  <div style={{ width: '15.8%', background: '#dc2626' }} title="15.8% Rejected" />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                  2,800 Total Claims across 6 Intake Channels
                 </div>
               </div>
             </div>
 
-            {/* Col 2: Due within next month / Total Volume */}
+            {/* Col 2: Total Clean Processed Volume */}
             <div className="kpi-col">
               <div>
-                <div className="kpi-title-small">Processed Volume (30D)</div>
+                <div className="kpi-title-small">Processed UPI Volume</div>
                 <div className="kpi-big-value">
                   {fmtINR(totalVol)}
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>Settlement Velocity</div>
-                <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ width: '78%', height: '100%', background: 'var(--accent)' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+                  <b style={{ color: '#ffffff' }}>{totalTxns.toLocaleString()}</b> Transactions · <b style={{ color: 'var(--accent)' }}>{successRate}</b> Success
                 </div>
-                <div className="avatar-stack">
-                  <div className="avatar-stack-item">👨‍💻</div>
-                  <div className="avatar-stack-item">👱‍♀️</div>
-                  <div className="avatar-stack-item">🧑‍💼</div>
+                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden', marginTop: 2 }}>
+                  <div style={{ width: successRate, height: '100%', background: 'var(--accent)' }} />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                  Avg Ticket Size: <b style={{ color: '#fff' }}>₹{Math.round(avgTicket).toLocaleString()}</b>
                 </div>
               </div>
             </div>
 
-            {/* Col 3: Average time to get paid / Active Merchants */}
+            {/* Col 3: Merchant Ecosystem Breakdown */}
             <div className="kpi-col">
               <div>
-                <div className="kpi-title-small">Average Settlement Time</div>
+                <div className="kpi-title-small">Merchant Ecosystem</div>
                 <div className="kpi-big-value">
-                  2.4 <span>days</span>
+                  {activeMerchants.toLocaleString()} <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>/ {merchants.length.toLocaleString()}</span>
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
-                  Active Merchants: <b style={{ color: '#fff' }}>{activeMerchants.toLocaleString()}</b>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+                  Active Ratio: <b style={{ color: 'var(--accent)' }}>81.1%</b> · Flagged: <b style={{ color: '#ef4444' }}>{suspendedMerchants}</b>
                 </div>
-                <div className="avatar-stack">
-                  <div className="avatar-stack-item">👩‍💼</div>
-                  <div className="avatar-stack-item">👨‍💼</div>
+                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
+                  <div style={{ width: '81.1%', background: 'var(--accent)' }} />
+                  <div style={{ width: '9.9%', background: '#64748b' }} />
+                  <div style={{ width: '9.0%', background: '#ef4444' }} />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                  Avg Settlement Response: <b style={{ color: '#fff' }}>2.4 days</b>
                 </div>
               </div>
             </div>
 
-            {/* Col 4: Highlight Instant Payout Card with Electric Lime Accent */}
+            {/* Col 4: Fintrix AI Fraud & Risk Defense (Replaced mock Payout box) */}
             <div className="hero-payout-box">
               <div className="payout-header">
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600 }}>Available for Instant Payout</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-display)', marginTop: 2 }}>
-                    ₹2,14,390.00
+                  <div style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                    Fintrix AI Defense
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-display)', marginTop: 2 }}>
+                    +₹1.85 Cr
                   </div>
                 </div>
-                <span style={{ fontSize: 10, color: 'var(--text-2)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>
-                  Auto Payout
-                </span>
               </div>
 
               <div className="payout-pills-row">
                 <div className="payout-item-pill">
-                  <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#4443</span>
-                  <span>Visa</span>
+                  <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>Flagged</span>
+                  <span style={{ color: '#ef4444' }}>₹4.12 Cr</span>
                 </div>
                 <div className="payout-item-pill active">
-                  <span style={{ fontSize: 9 }}>#177210</span>
-                  <span>UPI Instant</span>
+                  <span style={{ fontSize: 8.5 }}>Dispute Rate</span>
+                  <span>{cbRate}</span>
                 </div>
                 <div className="payout-item-pill">
-                  <span style={{ fontSize: 9, color: 'var(--text-2)' }}>#711221</span>
-                  <span>IMPS Net</span>
+                  <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>KYC Pass</span>
+                  <span style={{ color: '#3b82f6' }}>94.2%</span>
                 </div>
               </div>
 
@@ -606,7 +662,7 @@ export default function Overview({ onNavigate }) {
                 onClick={() => onNavigate && onNavigate('dispute')}
                 style={{
                   width: '100%',
-                  background: '#ffffff',
+                  background: 'var(--accent)',
                   color: '#000000',
                   border: 'none',
                   padding: '8px 0',
@@ -614,10 +670,10 @@ export default function Overview({ onNavigate }) {
                   fontWeight: 800,
                   fontSize: 12,
                   cursor: 'pointer',
-                  transition: 'background 0.15s'
+                  transition: 'all 0.15s ease'
                 }}
               >
-                Pay out now →
+                Inspect Threat Matrix →
               </button>
             </div>
           </div>
@@ -659,120 +715,150 @@ export default function Overview({ onNavigate }) {
         </div>
       </div>
 
-      {/* 4. Bottom Split Layout: High-Contrast Invoices List + Dark Deep-Dive Inspector */}
+      {/* 4. Bottom Split Layout: Live Dispute Stream & Forensic AI Deep-Dive HUD */}
       <div className="bottom-dual-grid">
-        {/* Left Card: High-Contrast Invoices & Merchants Stream */}
-        <div className="contrast-card-light">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#000000' }}>
-              Unpaid Invoices & Disputes
+        {/* Left Panel: Real Dispute Triage Stream */}
+        <div className="stream-panel-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>Live Dispute & Triage Stream</span>
+                <span style={{ fontSize: 9.5, fontWeight: 800, background: 'var(--accent-soft)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 'var(--radius-pill)', border: '1px solid rgba(180, 243, 41, 0.3)' }}>
+                  {filteredDisputes.length} CASES
+                </span>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 2 }}>
+                Incoming customer dispute queue from 6 channels
+              </div>
             </div>
-            <div style={{ display: 'flex', background: '#eceef3', padding: 3, borderRadius: 'var(--radius-pill)' }}>
-              <button
-                onClick={() => setActiveTab('all')}
-                style={{
-                  background: activeTab === 'all' ? '#000000' : 'transparent',
-                  color: activeTab === 'all' ? '#ffffff' : '#656f81',
-                  border: 'none',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setActiveTab('draft')}
-                style={{
-                  background: activeTab === 'draft' ? '#000000' : 'transparent',
-                  color: activeTab === 'draft' ? '#ffffff' : '#656f81',
-                  border: 'none',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Draft 3
-              </button>
-              <button
-                onClick={() => setActiveTab('unpaid')}
-                style={{
-                  background: activeTab === 'unpaid' ? 'var(--accent)' : 'transparent',
-                  color: activeTab === 'unpaid' ? '#000000' : '#656f81',
-                  border: 'none',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                Unpaid 5
-              </button>
-            </div>
-          </div>
 
-          {/* List of Invoices */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {sampleInvoices.map((inv) => {
-              const isSelected = activeInvoice.id === inv.id;
-              return (
-                <div
-                  key={inv.id}
-                  onClick={() => setSelectedTxn(inv)}
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: 3, borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)' }}>
+              {[
+                { id: 'ALL', label: 'All (2.8K)' },
+                { id: 'OPEN', label: 'Open (1.4K)' },
+                { id: 'CRITICAL', label: 'Critical' },
+                { id: 'CLOSED', label: 'Closed' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setStreamFilter(tab.id)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    borderRadius: 12,
-                    background: isSelected ? '#12161f' : '#f9fafc',
-                    color: isSelected ? '#ffffff' : '#0e1117',
-                    border: isSelected ? '1.5px solid #000000' : '1px solid #e5e8f0',
+                    background: streamFilter === tab.id ? 'var(--accent)' : 'transparent',
+                    color: streamFilter === tab.id ? '#000000' : 'var(--text-1)',
+                    border: 'none',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-pill)',
+                    fontSize: 11,
+                    fontWeight: 700,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
                   }}
                 >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Search */}
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.25)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: '6px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12
+          }}>
+            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Complaint ID, Merchant, City, or Reason..."
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#ffffff',
+                fontSize: 12,
+                width: '100%'
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Dispute Items Scrollable Stream */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
+            {filteredDisputes.slice(0, 30).map((d) => {
+              const isSelected = activeDispute.id === d.id;
+              const isCrit = d.severity === 'CRITICAL';
+              const isHigh = d.severity === 'HIGH';
+              const isLow = d.severity === 'LOW';
+
+              return (
+                <div
+                  key={d.id}
+                  onClick={() => setSelectedDisputeId(d.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: isSelected ? '#1b212f' : '#141822',
+                    border: isSelected ? '1.5px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isSelected ? '0 4px 16px rgba(180, 243, 41, 0.12)' : 'none'
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Severity Indicator Dot */}
                     <div style={{
-                      width: 32,
-                      height: 32,
+                      width: 8,
+                      height: 8,
                       borderRadius: '50%',
-                      background: isSelected ? '#1d222e' : '#e4e7ef',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 14
-                    }}>
-                      {inv.avatar}
-                    </div>
+                      background: isCrit ? '#ef4444' : isHigh ? '#f59e0b' : isLow ? '#64748b' : '#3b82f6',
+                      boxShadow: isCrit ? '0 0 8px #ef4444' : 'none'
+                    }} />
+
                     <div>
-                      <div style={{ fontSize: 12, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                        {inv.id}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#ffffff' }}>
+                          {d.complaintId}
+                        </span>
+                        <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: 'var(--text-2)' }}>
+                          {d.channel}
+                        </span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: isSelected ? '#9aa3b2' : '#6d7690' }}>
-                        {inv.days}
+                      <div style={{ fontSize: 10.5, color: 'var(--text-1)', marginTop: 2 }}>
+                        {d.merchantName} · <span style={{ color: 'var(--text-2)' }}>{d.reason}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '3px 8px',
-                    borderRadius: 'var(--radius-pill)',
-                    background: isSelected ? 'rgba(255,255,255,0.1)' : '#eceef3',
-                    color: isSelected ? '#ffffff' : '#4e5767'
-                  }}>
-                    {inv.status}
-                  </div>
-
-                  <div style={{ fontSize: 13, fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                    {fmtINR(inv.amount)}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, fontFamily: 'var(--font-mono)', color: isCrit ? '#f87171' : '#ffffff' }}>
+                      {fmtINR(d.amount)}
+                    </div>
+                    <div style={{
+                      fontSize: 9,
+                      fontWeight: 800,
+                      marginTop: 2,
+                      color: d.status === 'OPEN' ? '#fbbf24' : d.status === 'CLOSED' ? '#34d399' : '#f87171'
+                    }}>
+                      ● {d.status}
+                    </div>
                   </div>
                 </div>
               );
@@ -780,122 +866,254 @@ export default function Overview({ onNavigate }) {
           </div>
         </div>
 
-        {/* Right Card: Dark Deep-Dive Detail Inspector with Lime Action Button */}
-        <div className="contrast-card-dark" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 600 }}>Invoice Details</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
-                  {activeInvoice.id}
-                </div>
-                <span style={{ fontSize: 9.5, color: 'var(--text-2)', background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4 }}>
-                  {activeInvoice.status}
+        {/* Right Panel: AI Forensic Case Inspector HUD */}
+        <div className="inspector-hud-card" style={{ gap: 14 }}>
+          {/* 1. Header: Complaint ID & Security Status */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 12, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                CASE IDENTIFIER
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                {activeDispute.complaintId}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: 4,
+                  background: activeDispute.status === 'OPEN' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  color: activeDispute.status === 'OPEN' ? '#fbbf24' : '#4ade80'
+                }}>
+                  {activeDispute.status}
                 </span>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 600 }}>Company</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>BlueRock UPI</span>
-                  <span style={{ fontSize: 11, color: 'var(--accent)' }}>✦</span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)' }}>{activeInvoice.name}</div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 600 }}>Customer</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#252a36', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-                    {activeInvoice.avatar}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Maria Jones</div>
-                    <div style={{ fontSize: 9.5, color: 'var(--text-2)' }}>CEO BlueRock</div>
-                  </div>
-                </div>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: 4,
+                  background: activeDispute.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                  color: activeDispute.severity === 'CRITICAL' ? '#f87171' : '#60a5fa'
+                }}>
+                  {activeDispute.severity} SEVERITY
+                </span>
               </div>
             </div>
 
-            {/* 3 Detail Sub-Metric Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: 'var(--card-inner)', padding: 12, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-                  ₹10,630.80 <span style={{ fontSize: 10, color: 'var(--accent)' }}>↗</span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 4 }}>Concept Development</div>
+            <div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                MERCHANT ENTITY
               </div>
-
-              <div style={{ background: 'var(--card-inner)', padding: 12, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-                  ₹31,892.40 <span style={{ fontSize: 10, color: 'var(--accent)' }}>↗</span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 4 }}>CRM Merchant Engine</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>{activeDispute.merchantName}</span>
+                <span style={{ fontSize: 11, color: 'var(--accent)' }}>✦</span>
               </div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-2)', marginTop: 2 }}>
+                {activeDispute.merchantCat} · {activeDispute.city}
+              </div>
+            </div>
 
-              <div style={{ background: 'var(--card-inner)', padding: 12, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-                  ₹10,630.80 <span style={{ fontSize: 10, color: 'var(--accent)' }}>↗</span>
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 4 }}>API Settlement</div>
+            <div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                CUSTOMER USER
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 3 }}>
+                User #{(activeDispute.user_id || 'U-9021').slice(-6)}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                Intake: {activeDispute.channel} Voice
               </div>
             </div>
           </div>
 
-          {/* Bottom Total & Payout Action Bar */}
+          {/* 2. Customer NLP Grievance Extraction Box */}
           <div style={{
             background: 'rgba(0,0,0,0.3)',
-            borderRadius: 14,
-            padding: '12px 16px',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 12,
+            padding: '10px 14px'
+          }}>
+            <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 3 }}>
+              💬 Customer Grievance Narrative (NLP Extraction)
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-0)', lineHeight: 1.4, fontStyle: 'italic' }}>
+              "{activeDispute.text}"
+            </div>
+          </div>
+
+          {/* 3. Forensic Case Lifecycle Stepper */}
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 12,
+            padding: '10px 14px'
+          }}>
+            <div style={{ fontSize: 9, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.5px', marginBottom: 8 }}>
+              CASE AUDIT & FORENSIC LIFECYCLE
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, position: 'relative' }}>
+              {[
+                { title: 'Intake Triaged', desc: `${activeDispute.channel} Log`, status: 'done' },
+                { title: 'NLP Extraction', desc: 'Reason Parsed', status: 'done' },
+                { title: 'AI Risk Scored', desc: '0.94 Anomaly', status: 'active' },
+                { title: 'Bank Settlement', desc: activeDispute.status, status: activeDispute.status === 'CLOSED' ? 'done' : 'pending' }
+              ].map((st, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      background: st.status === 'done' ? '#16a34a' : st.status === 'active' ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                      color: st.status === 'active' ? '#000' : '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 8,
+                      fontWeight: 900
+                    }}>
+                      {st.status === 'done' ? '✓' : st.status === 'active' ? '⚡' : (i + 1)}
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: st.status === 'active' ? 'var(--accent)' : '#fff' }}>
+                      {st.title}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--text-2)', paddingLeft: 18 }}>
+                    {st.desc}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. AI Threat Vector & Signal Radar Breakdown (fills dead space cleanly) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 12,
+            padding: '10px 14px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-2)' }}>
+                <span>Pattern Anomaly Match</span>
+                <b style={{ color: 'var(--accent)' }}>94.2%</b>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: '94.2%', height: '100%', background: 'var(--accent)' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-2)' }}>
+                <span>Merchant Risk Index</span>
+                <b style={{ color: '#ef4444' }}>High Risk (Hotspot)</b>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: '78%', height: '100%', background: '#ef4444' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-2)' }}>
+                <span>Customer Trust Score</span>
+                <b style={{ color: '#38bdf8' }}>98.6% Clean History</b>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: '98.6%', height: '100%', background: '#38bdf8' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-2)' }}>
+                <span>Evidence Confidence</span>
+                <b style={{ color: '#4ade80' }}>89.0% Verified UTR</b>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: '89%', height: '100%', background: '#4ade80' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Detail Forensic 3-Box Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ background: 'var(--card-inner)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                94.2% <span style={{ fontSize: 9, color: 'var(--accent)' }}>↗</span>
+              </div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', marginTop: 2 }}>AI Anomaly Confidence</div>
+            </div>
+
+            <div style={{ background: 'var(--card-inner)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                1.8 Days
+              </div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', marginTop: 2 }}>Target Turnaround</div>
+            </div>
+
+            <div style={{ background: 'var(--card-inner)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
+                Loss Shielded
+              </div>
+              <div style={{ fontSize: 9.5, color: 'var(--text-2)', marginTop: 2 }}>Mitigation Status</div>
+            </div>
+          </div>
+
+          {/* 6. Bottom Total & Actions Bar */}
+          <div style={{
+            background: 'rgba(0,0,0,0.35)',
+            borderRadius: 12,
+            padding: '10px 14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             border: '1px solid var(--border)',
             flexWrap: 'wrap',
-            gap: 12
+            gap: 10,
+            marginTop: 'auto'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div>
-                <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase' }}>Sub Total</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-                  {fmtINR(activeInvoice.amount)}
+                <div style={{ fontSize: 9, color: 'var(--text-2)', textTransform: 'uppercase' }}>Disputed Claim</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-mono)' }}>
+                  {fmtINR(activeDispute.amount)}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase' }}>Total</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-                  {fmtINR(activeInvoice.amount)}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 9.5, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 700 }}>Balance Due</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
-                  {fmtINR(activeInvoice.amount)}
+                <div style={{ fontSize: 9, color: 'var(--text-2)', textTransform: 'uppercase' }}>Reason</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
+                  {activeDispute.reason}
                 </div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-pill)',
-                width: 32,
-                height: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-1)',
-                cursor: 'pointer'
-              }}>
-                📄
-              </button>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('map')}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-pill)',
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--text-1)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🗺️ Locate on Map
+                </button>
+              )}
               <button
-                onClick={() => onNavigate && onNavigate('map')}
+                onClick={() => onNavigate && onNavigate('dispute')}
                 className="btn-primary-lime"
-                style={{ fontSize: 12, padding: '7px 18px' }}
+                style={{ fontSize: 11.5, padding: '6px 16px' }}
               >
-                Pay out now
+                ⚡ AI Auto-Arbitrate
               </button>
             </div>
           </div>

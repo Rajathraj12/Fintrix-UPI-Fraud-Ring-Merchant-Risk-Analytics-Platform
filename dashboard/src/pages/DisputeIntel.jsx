@@ -6,15 +6,64 @@ const fmt = (n) => n >= 1e5 ? `${(n/1e5).toFixed(1)}L` : n >= 1e3 ? `${(n/1e3).t
 const pct = (n, d) => d === 0 ? '0.0%' : `${((n/d)*100).toFixed(1)}%`;
 
 // Reusable horizontal bar
-const HBar = ({ label, value, maxVal, color = '#5b8cff', suffix = '' }) => (
-  <div className="cat-bar-row">
-    <div className="cat-bar-label" title={label}>{label}</div>
-    <div className="cat-bar-track">
-      <div className="cat-bar-fill" style={{ width: `${maxVal > 0 ? (value/maxVal)*100 : 0}%`, background: color }} />
+const HBar = ({ label, value, maxVal, color = '#5b8cff', suffix = '' }) => {
+  const pct = maxVal > 0 ? (value / maxVal) * 100 : 0;
+  return (
+    <div style={{ 
+      marginBottom: 4, 
+      cursor: 'pointer', 
+      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', 
+      position: 'relative',
+      height: 28,
+      background: 'rgba(255,255,255,0.02)',
+      borderRadius: 6,
+      overflow: 'hidden',
+      border: '1px solid rgba(255,255,255,0.05)',
+      display: 'flex',
+      alignItems: 'center',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    }} 
+    onMouseEnter={(e) => { 
+      e.currentTarget.style.transform = 'scale(1.02) translateX(4px)'; 
+      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+    }}
+    onMouseLeave={(e) => { 
+      e.currentTarget.style.transform = 'none'; 
+      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+    }}>
+      
+      {/* Background Fill Track */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0,
+        width: `${pct}%`,
+        background: `linear-gradient(90deg, ${color}11, ${color}55)`,
+        borderRight: `2px solid ${color}`,
+        transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)',
+        zIndex: 0,
+        boxShadow: `2px 0 12px ${color}44`
+      }} />
+
+      {/* Content Overlay */}
+      <div style={{ 
+        position: 'relative', zIndex: 1, 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+        width: '100%', padding: '0 10px' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}88` }} />
+          <span style={{ fontSize: 10.5, color: '#ffffff', fontWeight: 600, letterSpacing: '0.5px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            {label.replace(/_/g, ' ')}
+          </span>
+        </div>
+        <span style={{ fontSize: 12.5, color: '#ffffff', fontFamily: 'var(--font-mono)', fontWeight: 800, textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>
+          {typeof value === 'number' ? (suffix ? `${value.toFixed(1)}${suffix}` : fmt(value)) : value}
+        </span>
+      </div>
     </div>
-    <div className="cat-bar-val">{typeof value === 'number' ? (suffix ? `${value.toFixed(1)}${suffix}` : fmt(value)) : value}</div>
-  </div>
-);
+  );
+};
 
 const DisputeIntel = () => {
   const { data } = useData();
@@ -78,7 +127,7 @@ const DisputeIntel = () => {
     return { sevs, ress, matrix, maxVal: Math.max(...Object.values(matrix), 1) };
   }, [cb]);
 
-  const REASON_COLORS = ['#5b8cff','#3ddc97','#a78bfa','#f5b642','#ff5d7a','#38bdf8','#fb923c','#e879f9'];
+  const REASON_COLORS = ['#00e676','#651fff','#ff9100','#f50057','#00b0ff','#d50000','#aa00ff','#ffea00'];
 
   return (
     <div className="page-anim">
@@ -116,58 +165,88 @@ const DisputeIntel = () => {
 
       {/* Chargeback Reason Breakdown & Heatmap in 2-Column Grid */}
       <div className="grid g-2" style={{ marginBottom: 20 }}>
-        <div className="card">
-          <div className="card-h">
+        <div className="card" style={{ padding: 24 }}>
+          <div className="card-h" style={{ marginBottom: 24 }}>
             <div>
-              <div className="card-title">Chargeback by Reason Code</div>
-              <div className="card-desc">Count of disputes filed under each reason code.</div>
+              <div className="card-title" style={{ fontSize: 16 }}>Chargeback by Reason Code</div>
+              <div className="card-desc" style={{ marginTop: 4 }}>Volume of disputes filed under each primary network reason code.</div>
             </div>
-            <span className="card-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-1)' }}>
+            <span className="card-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-0)', border: '1px solid rgba(255,255,255,0.1)' }}>
               {reasonData.length} REASONS
             </span>
           </div>
-          {reasonData.map(([reason, count], i) => (
-            <HBar key={reason} label={reason} value={count} maxVal={maxReason} color={REASON_COLORS[i % REASON_COLORS.length]} />
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {reasonData.map(([reason, count], i) => (
+              <HBar key={reason} label={reason} value={count} maxVal={maxReason} color={REASON_COLORS[i % REASON_COLORS.length]} />
+            ))}
+          </div>
         </div>
 
-        {/* Severity × Resolution Heatmap */}
-        <div className="card">
-          <div className="card-h">
+        {/* Severity × Resolution Matrix */}
+        <div className="card" style={{ padding: 24 }}>
+          <div className="card-h" style={{ marginBottom: 24 }}>
             <div>
-              <div className="card-title">Dispute Reason vs. Severity Heatmap</div>
-              <div className="card-desc">Darker cells = more disputes at that Severity × Reason combination.</div>
+              <div className="card-title" style={{ fontSize: 16 }}>Dispute Resolution Matrix</div>
+              <div className="card-desc" style={{ marginTop: 4 }}>Intersection of assigned severity vs current operational status.</div>
             </div>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '8px' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '6px 8px', fontSize: 10, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600 }}>Severity ↓ / Status →</th>
+                  <th style={{ padding: '0 8px 12px 8px', fontSize: 10, color: 'var(--text-2)', textAlign: 'left', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Severity ↓</th>
                   {heatData.ress.map(r => (
-                    <th key={r} style={{ padding: '6px 10px', fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>{r}</th>
+                    <th key={r} style={{ padding: '0 8px 12px 8px', fontSize: 10, color: 'var(--text-2)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>{r.replace(/_/g, ' ')}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {heatData.sevs.map(sev => (
-                  <tr key={sev}>
-                    <td style={{ padding: '6px 8px', fontSize: 11.5, color: 'var(--text-1)', fontWeight: 600 }}>{sev}</td>
-                    {heatData.ress.map(res => {
-                      const val = heatData.matrix[`${sev}__${res}`] || 0;
-                      const intensity = val / heatData.maxVal;
-                      const bg = `rgba(91,140,255,${(intensity * 0.7 + 0.05).toFixed(2)})`;
-                      return (
-                        <td key={res} title={`${sev} × ${res}: ${val}`}
-                          style={{ padding: '10px', textAlign: 'center' }}>
-                          <div className="heat-cell" style={{ background: val > 0 ? bg : 'rgba(255,255,255,0.03)', color: val > 0 ? '#fff' : 'var(--text-2)', height: 40 }}>
-                            {val || '–'}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {heatData.sevs.map(sev => {
+                  let baseColor = '91,140,255'; // blue for medium
+                  if (sev === 'CRITICAL') baseColor = '244,67,54'; // red
+                  if (sev === 'HIGH') baseColor = '255,193,7'; // amber
+                  if (sev === 'LOW') baseColor = '76,175,80'; // green
+
+                  return (
+                    <tr key={sev}>
+                      <td style={{ padding: '8px', fontSize: 11, color: 'var(--text-1)', fontWeight: 700, letterSpacing: '0.5px' }}>{sev}</td>
+                      {heatData.ress.map(res => {
+                        const val = heatData.matrix[`${sev}__${res}`] || 0;
+                        const intensity = val / heatData.maxVal;
+                        const hasData = val > 0;
+                        const bg = hasData ? `rgba(${baseColor}, ${(intensity * 0.6 + 0.1).toFixed(2)})` : 'rgba(255,255,255,0.02)';
+                        const border = hasData ? `1px solid rgba(${baseColor}, ${(intensity * 0.8 + 0.2).toFixed(2)})` : '1px solid rgba(255,255,255,0.05)';
+                        const shadow = hasData ? `inset 0 0 10px rgba(${baseColor}, 0.2), 0 4px 12px rgba(${baseColor}, ${(intensity * 0.4).toFixed(2)})` : 'none';
+                        const textColor = hasData ? '#fff' : 'rgba(255,255,255,0.2)';
+
+                        return (
+                          <td key={res} title={`${sev} × ${res}: ${val}`} style={{ padding: 0 }}>
+                            <div style={{
+                              background: bg,
+                              border: border,
+                              boxShadow: shadow,
+                              color: textColor,
+                              height: 44,
+                              borderRadius: 8,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 14,
+                              fontWeight: 800,
+                              fontFamily: 'var(--font-mono)',
+                              transition: 'all 0.3s ease',
+                              cursor: 'default'
+                            }}
+                            onMouseEnter={(e) => { if(hasData) e.currentTarget.style.transform = 'scale(1.05)'; }}
+                            onMouseLeave={(e) => { if(hasData) e.currentTarget.style.transform = 'none'; }}>
+                              {val || '–'}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

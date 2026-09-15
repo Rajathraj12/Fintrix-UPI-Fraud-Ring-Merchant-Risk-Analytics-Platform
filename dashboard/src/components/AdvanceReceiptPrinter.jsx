@@ -1,141 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * DataTelemetrySlip (Advance Data Dispenser Animation)
  * 
  * An animated intelligence data slip designed to showcase live Datathon metrics:
- * - Replaces generic "bill" concepts with high-tech Sentinel AI Telemetry.
+ * - Replaces generic "bill" concepts with high-tech Fintrix AI Telemetry.
  * - Features a cybernetic dispenser slit with an active laser scanline.
  * - Smooth physics-based continuous drop-down animation with live number reveals.
  * - Mini data visualizations (channel breakdown, resolution ratios, fraud mitigation stats).
  * - Interactive re-stream, detach/tear, and copy controls.
  */
-export default function AdvanceReceiptPrinter({ data = {}, onNavigate }) {
-  const [streamState, setStreamState] = useState('streaming'); // 'streaming' | 'streamed' | 'detached'
-  const [copied, setCopied] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'channels' | 'risk'
-  const audioCtxRef = useRef(null);
-
-  // Synthesize modern high-tech telemetry stream sound
-  const playStreamSound = () => {
-    if (!soundEnabled) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      const now = ctx.currentTime;
-      // Synthesize clean melodic telemetry data blips
-      const freqs = [440, 554.37, 659.25, 880, 1108.73];
-      freqs.forEach((f, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + idx * 0.18);
-        gain.gain.setValueAtTime(0.025, now + idx * 0.18);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.18 + 0.14);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + idx * 0.18);
-        osc.stop(now + idx * 0.18 + 0.15);
-      });
-    } catch {
-      // Audio context fallback
-    }
-  };
-
-  const playDetachSound = () => {
-    if (!soundEnabled) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.16);
-    } catch {
-      // Audio fallback
-    }
-  };
+export default function AdvanceReceiptPrinter({ data = {} }) {
+  const [streamState, setStreamState] = useState('streaming'); // 'streaming' | 'streamed'
 
   // Trigger smooth data slip streaming animation
   const handleReStream = () => {
     setStreamState('streaming');
-    playStreamSound();
     setTimeout(() => {
       setStreamState('streamed');
     }, 1800);
-  };
-
-  // Toggle detach / floating slip state
-  const handleDetach = () => {
-    if (streamState === 'detached') {
-      setStreamState('streamed');
-    } else {
-      setStreamState('detached');
-      playDetachSound();
-    }
-  };
-
-  // Copy full analytics summary to clipboard
-  const handleCopyTelemetry = () => {
-    const report = `
-======================================================
-     SENTINEL AI // LIVE INTELLIGENCE TELEMETRY SLIP
-             TRANSORG AGENTIQ DATATHON 2026
-======================================================
-Generated: 14 Sep 2026 | Node: SENTINEL-NODE-09
-Security Tier: Compliant & Verified ✓
-
-1. EXECUTIVE VOLUME & FLOW:
-   • Clean UPI Volume:        ₹18.42 Cr (2,800 Txns)
-   • Disputed In-Review:      ₹4.12 Cr
-   • Net Processed Velocity:  ₹24.85 Cr
-
-2. DISPUTE RESOLUTION STATUS:
-   • Total Claims:            2,800 Cases
-   • OPEN:                    1,492 (53.3%)
-   • CLOSED:                  865   (30.9%)
-   • REJECTED:                443   (15.8%)
-
-3. CHANNEL INTAKE TELEMETRY:
-   • IVR Voice:               709 (25.3%)
-   • Chatbot AI:              698 (24.9%)
-   • Email Support:           375 (13.4%)
-   • Branch Desk:             366 (13.1%)
-   • Mobile App:              344 (12.3%)
-
-4. RISK MITIGATION & AI DEFENSE:
-   • Prevented Fraud Loss:    +₹1.85 Cr
-   • KYC Integrity Pass:      94.2%
-   • Regional Hotspot:        Mumbai / Delhi NCR (High Tier)
-   • Model F1-Confidence:     0.842
-
-======================================================
-  VERIFIED BY SENTINEL AUTONOMOUS RISK ORCHESTRATOR
-======================================================
-`;
-    navigator.clipboard.writeText(report.trim()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    }).catch(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    });
   };
 
   // Auto-run animation on mount
@@ -159,14 +42,8 @@ Security Tier: Compliant & Verified ✓
               <span className="cyber-radar-core" />
             </div>
             <div>
-              <div className="telemetry-title">Sentinel Telemetry Feed</div>
-              <div className="telemetry-subtitle">Live Autonomous Data Dispatch</div>
+              <div className="telemetry-title">Fintrix Telemetry Feed</div>
             </div>
-          </div>
-
-          <div className="ai-verified-chip">
-            <span style={{ color: 'var(--accent)' }}>✦</span>
-            <span>AI DISPATCH</span>
           </div>
         </div>
 
@@ -174,23 +51,22 @@ Security Tier: Compliant & Verified ✓
         <div className="dispenser-apparatus">
           {/* Top Metallic Dispenser Hood */}
           <div className="dispenser-bezel">
-            {/* Laser scanning beam */}
+            {/* Laser scanning beam inside slit */}
             <div className="laser-slit-track">
               <div className="laser-beam" />
             </div>
 
-            {/* Hardware LEDs & Micro Label */}
+            {/* Hardware LEDs */}
             <div className="dispenser-hardware-info">
               <div className="status-leds">
                 <span className={`led-dot ${streamState === 'streaming' ? 'led-laser-active' : 'led-laser-standby'}`} />
                 <span className="led-dot led-blue-dot" />
               </div>
-              <div className="dispenser-model-tag">OPTICAL TELEMETRY DISPENSER // v3.4</div>
             </div>
           </div>
 
-          {/* Slit Mask for Dispensing Motion */}
-          <div className="dispenser-mouth-channel">
+          {/* Strict Viewport Mask: Clips everything above the slit so paper only emerges downwards */}
+          <div className="dispenser-viewport-mask">
             {/* The Intelligence Data Slip with Smooth Sliding Drop Motion */}
             <div className={`intel-slip-carrier ${streamState === 'streaming' ? 'is-streaming-flow' : ''} ${streamState === 'detached' ? 'is-detached-floating' : ''}`}>
               
@@ -203,8 +79,8 @@ Security Tier: Compliant & Verified ✓
                   <div className="slip-brand-identity">
                     <div className="slip-brand-icon">✦</div>
                     <div>
-                      <div className="slip-brand-main">SENTINEL AI ENGINE</div>
-                      <div className="slip-brand-sub">TRANSORG DATATHON TELEMETRY</div>
+                      <div className="slip-brand-main">FINTRIX ENGINE</div>
+                      <div className="slip-brand-sub">DATATHON TELEMETRY</div>
                     </div>
                   </div>
                   
@@ -214,15 +90,13 @@ Security Tier: Compliant & Verified ✓
                   </div>
                 </div>
 
-                {/* Live Timestamp & Node Coordinates */}
+                {/* Live Timestamp */}
                 <div className="slip-telemetry-meta">
                   <div>
                     <span className="meta-k">TIMESTAMP:</span>
-                    <span className="meta-v">14-SEP-2026 // 20:45</span>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span className="meta-k">NODE:</span>
-                    <span className="meta-v">BLR-IN-09</span>
+                    <span className="meta-v">
+                      {new Date().toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).toUpperCase().replace(/ /g, '-')} // {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </span>
                   </div>
                 </div>
 
@@ -230,16 +104,13 @@ Security Tier: Compliant & Verified ✓
                 <div className="slip-hero-metric-box">
                   <div>
                     <div className="hero-metric-caption">TOTAL AUDITED VOLUME</div>
-                    <div className="hero-metric-val">₹24.85 Cr</div>
-                    <div className="hero-metric-growth">
-                      <span className="growth-arrow">↗</span> +14.2% MoM Velocity
-                    </div>
+                    <div className="hero-metric-val">₹24.45 Cr</div>
                   </div>
 
                   {/* Red/Amber Slanted Grunge Security Stamp */}
                   <div className="cyber-stamp-badge">
                     <div className="stamp-core-text">AUDITED</div>
-                    <div className="stamp-sub-text">TRANSORG AI</div>
+                    <div className="stamp-sub-text">SECURE</div>
                   </div>
                 </div>
 
@@ -294,7 +165,7 @@ Security Tier: Compliant & Verified ✓
                 <div className="slip-data-section">
                   <div className="section-micro-heading">
                     <span>TOP INTAKE CHANNELS</span>
-                    <span className="pill-metric">5 CHANNELS</span>
+                    <span className="pill-metric">6 CHANNELS</span>
                   </div>
 
                   <div className="channel-pill-grid">
@@ -318,6 +189,16 @@ Security Tier: Compliant & Verified ✓
                       <div className="chan-name">Branch</div>
                       <div className="chan-val">366</div>
                     </div>
+                    <div className="channel-stat-card">
+                      <div className="chan-icon">📱</div>
+                      <div className="chan-name">App</div>
+                      <div className="chan-val">344</div>
+                    </div>
+                    <div className="channel-stat-card">
+                      <div className="chan-icon">🎧</div>
+                      <div className="chan-name">Call Center</div>
+                      <div className="chan-val">308</div>
+                    </div>
                   </div>
                 </div>
 
@@ -326,20 +207,20 @@ Security Tier: Compliant & Verified ✓
                 {/* Section 3: Risk & Mitigation KPIs */}
                 <div className="slip-kpi-summary-table">
                   <div className="kpi-summary-line">
-                    <span className="kpi-k">High Risk Intercepted</span>
-                    <span className="kpi-v text-red">₹4.12 Cr</span>
+                    <span className="kpi-k">Total Disputed Claims</span>
+                    <span className="kpi-v text-red">₹73.96 Lakh</span>
                   </div>
                   <div className="kpi-summary-line">
-                    <span className="kpi-k">Fraud Losses Mitigated</span>
-                    <span className="kpi-v text-green">+₹1.85 Cr</span>
+                    <span className="kpi-k">UPI Txn Success Rate</span>
+                    <span className="kpi-v text-green">85.3%</span>
                   </div>
                   <div className="kpi-summary-line">
-                    <span className="kpi-k">KYC Identity Pass Rate</span>
-                    <span className="kpi-v text-blue">94.2%</span>
+                    <span className="kpi-k">KYC Verified Ratio</span>
+                    <span className="kpi-v text-blue">76.3%</span>
                   </div>
                   <div className="kpi-summary-line">
-                    <span className="kpi-k">Model F1-Confidence</span>
-                    <span className="kpi-v text-purple">0.842</span>
+                    <span className="kpi-k">Active Merchant Base</span>
+                    <span className="kpi-v text-purple">81.1%</span>
                   </div>
                 </div>
 
@@ -397,7 +278,7 @@ Security Tier: Compliant & Verified ✓
                     <rect x="229" y="0" width="3" height="32" fill="#0f172a" />
                     <rect x="235" y="0" width="3" height="32" fill="#0f172a" />
                   </svg>
-                  <div className="slip-hash-string">HASH-SENTINEL-99482-AI-2026</div>
+                  <div className="slip-hash-string">HASH-FINTRIX-99482-AI-2026</div>
                 </div>
 
                 {/* Perforated Bottom Jagged Edge */}
@@ -407,73 +288,7 @@ Security Tier: Compliant & Verified ✓
           </div>
         </div>
 
-        {/* Dynamic Status Section */}
-        <div className="telemetry-status-panel">
-          <div className="status-main-line">
-            {streamState === 'streaming'
-              ? 'Streaming Telemetry Data...'
-              : streamState === 'detached'
-              ? 'Telemetry Slip Detached'
-              : 'Intelligence Stream Synced'}
-          </div>
-          <div className="status-detail-line">
-            {streamState === 'streaming'
-              ? 'Optical feed rendering active data packets.'
-              : streamState === 'detached'
-              ? 'Ready for export or live re-stream.'
-              : 'Real-time telemetry verified and locked.'}
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="telemetry-actions-row">
-          <button
-            onClick={handleReStream}
-            disabled={streamState === 'streaming'}
-            className="action-btn-restream"
-            title="Re-run the streaming animation"
-          >
-            <span className="btn-glyph">⚡</span>
-            <span>{streamState === 'streaming' ? 'Streaming...' : 'Re-stream Data'}</span>
-          </button>
-
-          <button
-            onClick={handleDetach}
-            disabled={streamState === 'streaming'}
-            className={`action-btn-detach ${streamState === 'detached' ? 'is-detached-btn' : ''}`}
-            title="Detach or re-dock the intelligence slip"
-          >
-            <span className="btn-glyph">✂️</span>
-            <span>{streamState === 'detached' ? 'Dock Slip' : 'Detach Slip'}</span>
-          </button>
-
-          <button
-            onClick={handleCopyTelemetry}
-            className="action-btn-copy-telemetry"
-            title="Copy full telemetry summary"
-          >
-            <span className="btn-glyph">{copied ? '✓' : '📋'}</span>
-            <span>{copied ? 'Copied!' : 'Copy'}</span>
-          </button>
-        </div>
-
-        {/* Footer Micro Links */}
-        <div className="telemetry-micro-footer">
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="sound-toggle-action"
-          >
-            {soundEnabled ? '🔊 Audio FX On' : '🔇 Audio Muted'}
-          </button>
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('dispute')}
-              className="deep-dive-btn"
-            >
-              Dispute Matrix →
-            </button>
-          )}
-        </div>
+        {/* End Dispenser Apparatus */}
       </div>
 
       <style>{`
@@ -594,7 +409,7 @@ Security Tier: Compliant & Verified ✓
           background: linear-gradient(180deg, #2b3140 0%, #151822 55%, #0c0e14 100%);
           border-radius: 18px;
           position: relative;
-          z-index: 10;
+          z-index: 25;
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.65), inset 0 1.5px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 6px rgba(0, 0, 0, 0.8);
           border: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
@@ -677,11 +492,13 @@ Security Tier: Compliant & Verified ✓
           color: rgba(255, 255, 255, 0.25);
         }
 
-        /* Dispenser Mouth Channel */
-        .dispenser-mouth-channel {
+        /* Strict Dispenser Masking: Clips anything above the slit line */
+        .dispenser-viewport-mask {
           width: 265px;
           position: relative;
-          margin-top: -10px;
+          margin-top: -18px; /* Tucked behind the bottom edge of the bezel */
+          padding-top: 18px; /* Aligns top of slip right at the slit opening */
+          overflow: hidden; /* CRITICAL: Never allows paper to show above the dispenser */
           z-index: 5;
         }
 
@@ -692,28 +509,27 @@ Security Tier: Compliant & Verified ✓
           transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
         }
 
-        /* Improved Fluid Drop-Down Animation */
+        /* Pure Downward Dispenser Flow Animation */
         .intel-slip-carrier.is-streaming-flow {
-          animation: fluidSlipDrop 1.8s cubic-bezier(0.12, 0.95, 0.2, 1) forwards;
+          animation: fluidSlipDrop 1.8s cubic-bezier(0.12, 0.95, 0.25, 1) forwards;
         }
 
         @keyframes fluidSlipDrop {
           0% {
-            clip-path: inset(0 0 96% 0);
-            transform: translateY(-90px) scale(0.96);
-            opacity: 0.5;
+            transform: translateY(-100%);
+            opacity: 0.85;
           }
-          35% {
-            clip-path: inset(0 0 65% 0);
-            transform: translateY(-40px) scale(0.98);
+          30% {
+            transform: translateY(-60%);
           }
-          70% {
-            clip-path: inset(0 0 20% 0);
-            transform: translateY(-8px) scale(0.995);
+          65% {
+            transform: translateY(-20%);
+          }
+          85% {
+            transform: translateY(-4px);
           }
           100% {
-            clip-path: inset(0 0 0 0);
-            transform: translateY(0) scale(1);
+            transform: translateY(0%);
             opacity: 1;
           }
         }
@@ -989,7 +805,7 @@ Security Tier: Compliant & Verified ✓
         /* Channel Pill Grid */
         .channel-pill-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 4px;
         }
 
@@ -1090,148 +906,7 @@ Security Tier: Compliant & Verified ✓
           );
         }
 
-        /* Status Footer */
-        .telemetry-status-panel {
-          text-align: center;
-          margin-top: 20px;
-          margin-bottom: 12px;
-        }
-
-        .status-main-line {
-          font-family: var(--font-display);
-          font-size: 15px;
-          font-weight: 800;
-          color: #ffffff;
-        }
-
-        .status-detail-line {
-          font-size: 11px;
-          color: var(--text-2);
-          margin-top: 2px;
-        }
-
-        /* Action Buttons */
-        .telemetry-actions-row {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          width: 100%;
-          flex-wrap: wrap;
-        }
-
-        .action-btn-restream {
-          flex: 1;
-          min-width: 120px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border-radius: var(--radius-pill);
-          font-size: 12px;
-          font-weight: 700;
-          background: #faf8f5;
-          color: #171c26;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .action-btn-restream:hover:not(:disabled) {
-          background: #ffffff;
-          transform: translateY(-1.5px);
-        }
-
-        .action-btn-restream:disabled {
-          opacity: 0.65;
-          cursor: not-allowed;
-        }
-
-        .action-btn-detach {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border-radius: var(--radius-pill);
-          font-size: 12px;
-          font-weight: 700;
-          background: rgba(255, 255, 255, 0.06);
-          color: #ffffff;
-          border: 1px dashed rgba(255, 255, 255, 0.25);
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .action-btn-detach:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .is-detached-btn {
-          background: rgba(234, 88, 12, 0.15);
-          border-color: #ea580c;
-          color: #fdba74;
-        }
-
-        .action-btn-copy-telemetry {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          padding: 8px 12px;
-          border-radius: var(--radius-pill);
-          font-size: 12px;
-          font-weight: 700;
-          background: rgba(255, 255, 255, 0.06);
-          color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .action-btn-copy-telemetry:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-glyph {
-          font-size: 13px;
-        }
-
         /* Micro footer */
-        .telemetry-micro-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
-          margin-top: 14px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-          font-size: 10.5px;
-        }
-
-        .sound-toggle-action {
-          background: transparent;
-          border: none;
-          color: var(--text-2);
-          cursor: pointer;
-        }
-
-        .sound-toggle-action:hover {
-          color: #ffffff;
-        }
-
-        .deep-dive-btn {
-          background: transparent;
-          border: none;
-          color: var(--accent);
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .deep-dive-btn:hover {
-          text-decoration: underline;
-        }
       `}</style>
     </div>
   );
