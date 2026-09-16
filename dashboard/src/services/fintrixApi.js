@@ -12,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_FINTRIX_API_URL || (import.meta.env.DE
 export async function checkBackendHealth() {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60s for Render wake-up
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       headers: { 
