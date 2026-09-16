@@ -6,7 +6,7 @@ import FintrixAIChat from '../components/chat/FintrixAIChat';
  */
 export default function FintrixAIChatPage({ onNavigate }) {
   return (
-    <div className="page-anim" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="page-anim chat-container-mobile" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <FintrixAIChat onNavigate={onNavigate} />
     </div>
   );

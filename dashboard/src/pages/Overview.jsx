@@ -551,12 +551,7 @@ export default function Overview({ onNavigate }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Top 2-Column Grid: Left (KPIs & Activity Chart) + Right (Receipt Slip Alone) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) 360px',
-        gap: 20,
-        alignItems: 'start'
-      }}>
+      <div className="overview-top-grid">
         {/* Left Column: KPIs & Daily Velocity Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* 1. Clear & Contextual Grand Hero KPI Container */}
@@ -707,7 +702,7 @@ export default function Overview({ onNavigate }) {
         </div>
 
         {/* Right Column: The Receipt Slip ONLY (place nothing else here) */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="receipt-mobile-hide" style={{ display: 'flex', justifyContent: 'center' }}>
           <AdvanceReceiptPrinter
             data={{ txns, cb, merchants, kyc, totalVol, disputedAmt, activeMerchants }}
             onNavigate={onNavigate}

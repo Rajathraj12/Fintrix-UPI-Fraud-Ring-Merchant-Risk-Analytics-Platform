@@ -209,7 +209,7 @@ export default function FintrixAIChat({ onNavigate = null }) {
                           "Which customers have the most failed transactions?",
                           "Give me a financial risk summary of the entire dataset."
                         ].map(q => (
-                          <button key={q} onClick={() => handleSendMessage(q)} style={{ background: "#111", border: "1px solid #2a2d35", borderRadius: 8, padding: "10px 14px", color: "#bbb", fontSize: 12, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "calc(50% - 6px)" }}>
+                          <button key={q} onClick={() => handleSendMessage(q)} style={{ background: "#111", border: "1px solid #2a2d35", borderRadius: 8, padding: "10px 14px", color: "#bbb", fontSize: 12, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flex: "1 1 200px" }}>
                             {q}
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaff00" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                           </button>

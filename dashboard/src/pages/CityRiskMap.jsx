@@ -453,12 +453,18 @@ export default function CityRiskMap() {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.flyTo([c.lat, c.lng], 7.5, { duration: 1.2 });
       }
+      if (mapContainerRef.current) {
+        mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
   const handleRegionZoom = (reg) => {
     if (mapInstanceRef.current) {
       mapInstanceRef.current.flyTo(reg.center, reg.zoom, { duration: 1.2 });
+    }
+    if (mapContainerRef.current) {
+      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -604,7 +610,7 @@ export default function CityRiskMap() {
       </div>
 
       {/* Main State Boundary Map & Deep Dive Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(360px, 1fr)', gap: 20 }}>
+      <div className="grid g-main-side" style={{ gap: 20 }}>
         {/* Left: Real Leaflet Map with State Boundaries & Choropleth Color */}
         <div className="card" style={{ position: 'relative', overflow: 'hidden', minHeight: 620, display: 'flex', flexDirection: 'column' }}>
           {/* Map Header Floating Overlay */}
@@ -674,7 +680,8 @@ export default function CityRiskMap() {
             ref={mapContainerRef}
             style={{
               width: '100%',
-              height: 620,
+              height: '100%',
+              flex: 1,
               minHeight: 620,
               borderRadius: 12,
               background: '#0a0e17'
@@ -982,11 +989,12 @@ export default function CityRiskMap() {
           Click any state card to focus and highlight its boundary on the map
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <div className="grid g-3" style={{ gap: 16 }}>
           {Object.values(stateMetrics)
             .sort((a, b) => b.disputeRate - a.disputeRate)
             .map((st) => {
               const isSelected = selectedState === st.state;
+
               return (
                 <div
                   key={st.state}
@@ -997,27 +1005,48 @@ export default function CityRiskMap() {
                     if (c && mapInstanceRef.current) {
                       mapInstanceRef.current.flyTo([c.lat, c.lng], 6.5, { duration: 1.2 });
                     }
+                    if (mapContainerRef.current) {
+                      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                   }}
                   className="interactive-cause-card"
                   style={{
-                    background: isSelected ? `linear-gradient(145deg, rgba(255,255,255,0.05), ${st.riskColor}11)` : 'linear-gradient(145deg, var(--bg-1), rgba(0,0,0,0.2))',
-                    border: `1px solid rgba(255,255,255,0.08)`,
+                    background: isSelected 
+                      ? `linear-gradient(135deg, rgba(255,255,255,0.1), ${st.riskColor}22)` 
+                      : 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.4))',
+                    backdropFilter: 'blur(12px)',
+                    border: `1px solid ${isSelected ? st.riskColor : 'rgba(255,255,255,0.08)'}`,
                     borderTop: `3px solid ${st.riskColor}`,
-                    borderRadius: 12,
-                    padding: '16px',
+                    borderRadius: 16,
+                    padding: '20px',
                     cursor: 'pointer',
                     position: 'relative',
                     overflow: 'hidden',
-                    boxShadow: isSelected ? `0 8px 24px ${st.riskColor}33` : '0 4px 12px rgba(0,0,0,0.2)'
+                    boxShadow: isSelected ? `0 12px 30px ${st.riskColor}44` : '0 8px 24px rgba(0,0,0,0.3)',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)';
+                      e.currentTarget.style.boxShadow = `0 12px 28px ${st.riskColor}33`;
+                      e.currentTarget.style.borderColor = `rgba(255,255,255,0.2)`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                    }
                   }}
                 >
-                  {/* Subtle Background Glow for Selected State */}
-                  {isSelected && (
-                    <div style={{
-                      position: 'absolute', top: -30, right: -30, width: 100, height: 100,
-                      background: st.riskColor, filter: 'blur(40px)', opacity: 0.15, borderRadius: '50%'
-                    }} />
-                  )}
+                  {/* Glowing Orb Background Effect */}
+                  <div style={{
+                    position: 'absolute', top: -50, right: -50, width: 120, height: 120,
+                    background: st.riskColor, filter: 'blur(50px)', opacity: isSelected ? 0.3 : 0.1, borderRadius: '50%',
+                    transition: 'opacity 0.3s ease'
+                  }} />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, zIndex: 1, position: 'relative' }}>
                     <span style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', letterSpacing: '0.2px' }}>{st.state}</span>

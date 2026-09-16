@@ -154,7 +154,7 @@ export default function Home() {
       <section className="grid-bg" style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(170,255,0,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "120px 24px 80px", width: "100%", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+        <div className="home-grid-hero" style={{ maxWidth: 1280, margin: "0 auto", padding: "120px 24px 80px", width: "100%", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
           {/* Left copy */}
           <div>
             
@@ -215,7 +215,7 @@ export default function Home() {
       {/* ── STATS ── */}
       <section style={{ borderTop: "1px solid #111", borderBottom: "1px solid #111", background: "#070707" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div className="home-grid-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
             {stats.map((s, i) => <StatCard key={i} stat={s} delay={i * 100} />)}
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function Home() {
             Every transaction. Every merchant.<br />Every dispute — analysed.
           </h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#111" }}>
+        <div className="home-grid-features" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#111" }}>
           {features.map((f, i) => (
             <div key={i} className={`reveal reveal-delay-${(i % 4) + 1}`}
               style={{ background: "#000", padding: "36px 32px", transition: "background 0.3s", cursor: "default", position: "relative", overflow: "hidden" }}
@@ -249,7 +249,7 @@ export default function Home() {
       {/* ── MESSY DATA PANEL ── */}
       <section style={{ padding: "0 24px 80px", maxWidth: 1280, margin: "0 auto" }}>
         <div className="reveal" style={{ background: "#080808", border: "1px solid #1a1a1a", padding: "40px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+          <div className="home-grid-messy" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
             <div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#ff3b30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: 12 }}>
                 // THE MESSY DATA CHALLENGE
@@ -319,7 +319,7 @@ export default function Home() {
           <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", marginBottom: 24 }}>
             Dispute Reason Distribution
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="home-grid-reasons" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {[
               { reason: "Service Not Provided", count: 704, pct: 25.1, color: "#ff3b30" },
               { reason: "Customer Dispute", count: 376, pct: 13.4, color: "#ffd60a" },
@@ -355,7 +355,7 @@ export default function Home() {
       
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: "1px solid #0f0f0f", padding: "36px 24px", background: "#000" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <div className="home-footer" style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: "#aaff00" }}>fintrix</div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#1a1a1a", letterSpacing: "1px" }}>TRANSORG AGENTIQ DATATHON 2026 · TEAM FINTRIX</div>
           <div style={{ display: "flex", gap: 24 }}>
