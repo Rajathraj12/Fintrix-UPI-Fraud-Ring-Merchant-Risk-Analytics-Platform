@@ -279,7 +279,7 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, maxHeight: 310, overflowY: 'auto', paddingRight: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, paddingRight: 4 }}>
             {slices.map((item, i) => {
               const isHovered = hoveredIdx === i;
               const isHighRisk = item.rate > 15;

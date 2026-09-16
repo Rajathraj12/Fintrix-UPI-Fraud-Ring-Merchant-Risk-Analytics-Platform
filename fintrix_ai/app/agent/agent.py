@@ -1,5 +1,6 @@
 import logging
 import requests
+import re
 from typing import List, Optional
 from .config import (
     OLLAMA_MODEL,
@@ -82,8 +83,12 @@ def call_ollama(messages: list, model: str = None) -> str:
         }
     }
 
+    headers = {
+        "ngrok-skip-browser-warning": "69420"
+    }
+
     try:
-        resp = requests.post(url, json=payload, timeout=300)  # 5-min timeout for local LLM
+        resp = requests.post(url, json=payload, headers=headers, timeout=300)  # 5-min timeout for local LLM
         resp.raise_for_status()
         data = resp.json()
         return data.get("message", {}).get("content", "").strip()
@@ -99,7 +104,8 @@ def call_ollama(messages: list, model: str = None) -> str:
 
 
 def parse_tool_call(response: str):
-    """Parse a TOOL_CALL from the LLM response."""
+    """Parse a TOOL_CALL from the LLM response using regex for better leniency."""
+    # Strict parsing for the original format
     for line in response.split("\n"):
         line = line.strip()
         if line.startswith("TOOL_CALL:"):
@@ -109,6 +115,18 @@ def parse_tool_call(response: str):
                 tool_name = call_str[:call_str.index("(")].strip()
                 args_str = call_str[call_str.index("(") + 1:-1].strip()
                 return tool_name, args_str
+                
+    # Lenient fallback: search the text for any known tool names
+    known_tools = list(TOOL_REGISTRY.keys())
+    for tool in known_tools:
+        if tool in response:
+            # Check if there are arguments provided in parentheses after the tool name
+            match = re.search(rf"{tool}\s*\((.*?)\)", response)
+            if match:
+                return tool, match.group(1).strip()
+            # Otherwise, just call it with no args
+            return tool, ""
+            
     return None, None
 
 

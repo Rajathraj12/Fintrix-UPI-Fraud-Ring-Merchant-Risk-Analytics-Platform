@@ -33,3 +33,9 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Extra ignores
+venv2/
+data/
+scratch/
+

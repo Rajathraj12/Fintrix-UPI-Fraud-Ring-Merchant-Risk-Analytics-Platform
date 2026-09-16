@@ -16,7 +16,7 @@ export default function Nav() {
     { label: "Home", href: "/" },
     
     { label: "About Us", href: "/about" },
-    { label: "Chatbot", href: "/dashboard?page=ai" },
+    { label: "Fintrix AI", href: "/dashboard?page=ai" },
   ];
 
   const NavItem = ({ link, location }: any) => {
