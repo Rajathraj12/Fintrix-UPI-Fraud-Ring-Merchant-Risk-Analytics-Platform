@@ -4,7 +4,7 @@
  * Supports automatic fallback and mock response generator if backend is temporarily offline.
  */
 
-const API_BASE_URL = import.meta.env.VITE_FINTRIX_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_FINTRIX_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://fintrix-upi-fraud-ring-merchant-risk.onrender.com');
 
 /**
  * Health check to verify backend operational readiness.
