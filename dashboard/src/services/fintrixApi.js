@@ -15,7 +15,10 @@ export async function checkBackendHealth() {
     const timeoutId = setTimeout(() => controller.abort(), 3000);
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: { 
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -44,6 +47,7 @@ export async function sendChatMessage(message, sessionId = 'default-session', lo
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
       },
       body: JSON.stringify({
         message: message.trim(),
