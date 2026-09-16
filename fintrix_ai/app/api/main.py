@@ -53,9 +53,9 @@ def create_app() -> FastAPI:
     logger.info(f"Configured CORS allowed origins: {origins}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
         allow_headers=["*"],
     )
 
