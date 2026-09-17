@@ -96,9 +96,9 @@ const PremiumDonutChart = ({ data, colors, total }) => {
   const hov = hovered ? data.find(d => d[0] === hovered) : null;
   
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 40, marginTop: 24, paddingBottom: 16 }}>
-      <div style={{ position: 'relative', width: 280, height: 280 }}>
-        <svg width="280" height="280" viewBox="0 0 280 280" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
+    <div className="chart-row-mobile" style={{ display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap', marginTop: 24, paddingBottom: 16 }}>
+      <div className="chart-svg-wrap" style={{ position: 'relative', width: '100%', maxWidth: 280, aspectRatio: '1 / 1', margin: '0 auto' }}>
+        <svg width="100%" height="100%" viewBox="0 0 280 280" style={{ transform: 'rotate(-90deg)', overflow: 'visible', display: 'block' }}>
           <circle cx="140" cy="140" r={R} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="22" />
           {data.map(([label, count]) => {
             const val = (count / total) * C;
@@ -197,10 +197,10 @@ const PremiumPieChart = ({ data, colors, total }) => {
   const hov = slices.find(s => s.label === hovered);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap', marginTop: 24, paddingBottom: 16 }}>
+    <div className="chart-row-mobile" style={{ display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap', marginTop: 24, paddingBottom: 16 }}>
       {/* Pie SVG */}
-      <div style={{ flexShrink: 0, width: 280, height: 280, position: 'relative' }}>
-        <svg width={280} height={280} viewBox="0 0 280 280" style={{ overflow: 'visible', display: 'block' }}>
+      <div className="chart-svg-wrap" style={{ flexShrink: 0, width: '100%', maxWidth: 280, aspectRatio: '1 / 1', position: 'relative', margin: '0 auto' }}>
+        <svg width="100%" height="100%" viewBox="0 0 280 280" style={{ overflow: 'visible', display: 'block' }}>
           <defs>
             {slices.map(s => (
               <filter key={s.label} id={`pgf-${s.label}`} x="-40%" y="-40%" width="180%" height="180%">
@@ -318,8 +318,8 @@ const SleekAuditTimeline = ({ exampleData }) => {
         </div>
       </div>
       
-      <div style={{ padding: '40px 32px 50px', display: 'flex', alignItems: 'center', overflowX: 'auto', overflowY: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative', width: '100%', minWidth: records.length * 160 }}>
+      <div className="timeline-scroll-wrap" style={{ padding: '40px 32px 50px', display: 'flex', alignItems: 'center', overflowX: 'auto', overflowY: 'hidden', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative', minWidth: Math.max(records.length * 160, 100) }}>
           
           {/* Continuous background track line */}
           <div style={{ position: 'absolute', top: 20, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.06)' }} />
@@ -430,73 +430,113 @@ const IdentityIntegrity = () => {
   const RISK_COLORS = { LOW: '#34d399', MEDIUM: '#fbbf24', HIGH: '#f87171' };
 
   return (
-    <div style={{ paddingBottom: 60 }}>
-      {/* Title Animation */}
-      <div className="anim-fade-in-up" style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.02em' }}>Entity Resolution & Risk</h2>
-        <p style={{ color: 'var(--text-2)', maxWidth: 800, lineHeight: 1.5 }}>
-          Advanced monitoring of identity stability. Detecting conflicting states, registration mutations, and duplication anomalies across merchant and user pipelines.
-        </p>
-      </div>
-
-      {/* Merchant Anomalies */}
-      <div className="glass-panel anim-fade-in-up anim-stagger-1" style={{ marginBottom: 32 }}>
-        <div className="glass-panel-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="glass-panel-title">Merchant State Instability</div>
-              <div className="glass-panel-subtitle">Monitoring duplicate merchant_ids with conflicting attributes indicating potential evasion.</div>
-            </div>
-            <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: '1px solid rgba(255,184,52,0.3)' }}>
-              PIPELINE ALERT
-            </div>
-          </div>
+    <>
+      <div style={{ paddingBottom: 60 }}>
+        {/* Title Animation */}
+        <div className="anim-fade-in-up" style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.02em' }}>Entity Resolution & Risk</h2>
+          <p style={{ color: 'var(--text-2)', maxWidth: 800, lineHeight: 1.5 }}>
+            Advanced monitoring of identity stability. Detecting conflicting states, registration mutations, and duplication anomalies across merchant and user pipelines.
+          </p>
         </div>
-        
-        <div className="grid g-3">
-          <PremiumAnomalyCard icon="⧉" num={merStats.multiCount} label="Duplicate Entries" desc="IDs with >1 record" theme="purple" delay="1" />
-          <PremiumAnomalyCard icon="⇄" num={merStats.statusFlipCount} label="Status Flip" desc="Flipped ACTIVE to SUSPENDED" theme="amber" delay="2" />
-          <PremiumAnomalyCard icon="✎" num={merStats.nameFlipCount} label="Name Mutation" desc="Registered under aliases" theme="lime" delay="3" />
-        </div>
-      </div>
 
-      <SleekAuditTimeline exampleData={merStats.example} />
-
-      {/* User KYC Integrity */}
-      <div className="grid g-2" style={{ marginTop: 32 }}>
-        <div className="glass-panel anim-fade-in-up anim-stagger-5" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Merchant Anomalies */}
+        <div className="glass-panel anim-fade-in-up anim-stagger-1" style={{ marginBottom: 32 }}>
           <div className="glass-panel-header">
-            <div className="glass-panel-title">KYC Funnel Health</div>
-            <div className="glass-panel-subtitle">Distribution of {fmt(totalKyc)} customer verification states.</div>
-          </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-            <PremiumPieChart data={kycDist} colors={KYC_COLORS} total={totalKyc} />
-          </div>
-          <div style={{ marginTop: 32, display: 'flex', gap: 16 }}>
-             <PremiumAnomalyCard icon="⏱" num={Math.round(totalKyc * 0.042)} label="SLA Breaches" desc="Verification > 24 hours" theme="lime" delay="5" />
-             <PremiumAnomalyCard icon="🗎" num={Math.round(totalKyc * 0.018)} label="Expired Docs" desc="Requires re-verification" theme="purple" delay="6" />
-          </div>
-        </div>
-
-        <div className="glass-panel anim-fade-in-up anim-stagger-6" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div className="glass-panel-header">
-            <div className="glass-panel-title">Portfolio Risk Exposure</div>
-            <div className="glass-panel-subtitle">Machine-assigned risk classifications across active users.</div>
+            <div className="panel-header-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div className="glass-panel-title">Merchant State Instability</div>
+                <div className="glass-panel-subtitle">Monitoring duplicate merchant_ids with conflicting attributes indicating potential evasion.</div>
+              </div>
+              <div style={{ background: 'var(--amber-soft)', color: 'var(--amber)', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: '1px solid rgba(255,184,52,0.3)', flexShrink: 0 }}>
+                PIPELINE ALERT
+              </div>
+            </div>
           </div>
           
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-            <PremiumDonutChart data={riskDist} colors={RISK_COLORS} total={totalKyc} />
-          </div>
-          
-          <div style={{ marginTop: 32, display: 'flex', gap: 16 }}>
-             <PremiumAnomalyCard icon="⚠" num={kycStats.riskFlipCount} label="Risk Clashes" desc="Users with conflicting tiers" theme="amber" delay="7" />
-             <PremiumAnomalyCard icon="👥" num={kycStats.statusFlipCount} label="State Mismatch" desc="Status synchronization errors" theme="purple" delay="8" />
+          <div className="grid g-3">
+            <PremiumAnomalyCard icon="⧉" num={merStats.multiCount} label="Duplicate Entries" desc="IDs with >1 record" theme="purple" delay="1" />
+            <PremiumAnomalyCard icon="⇄" num={merStats.statusFlipCount} label="Status Flip" desc="Flipped ACTIVE to SUSPENDED" theme="amber" delay="2" />
+            <PremiumAnomalyCard icon="✎" num={merStats.nameFlipCount} label="Name Mutation" desc="Registered under aliases" theme="lime" delay="3" />
           </div>
         </div>
+
+        <SleekAuditTimeline exampleData={merStats.example} />
+
+        {/* User KYC Integrity */}
+        <div className="grid g-2" style={{ marginTop: 32 }}>
+          <div className="glass-panel anim-fade-in-up anim-stagger-5" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-panel-header">
+              <div className="glass-panel-title">KYC Funnel Health</div>
+              <div className="glass-panel-subtitle">Distribution of {fmt(totalKyc)} customer verification states.</div>
+            </div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+              <PremiumPieChart data={kycDist} colors={KYC_COLORS} total={totalKyc} />
+            </div>
+            <div className="chart-row-mobile" style={{ marginTop: 32, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+               <div style={{ flex: '1 1 min-width: 0' }}><PremiumAnomalyCard icon="⏱" num={Math.round(totalKyc * 0.042)} label="SLA Breaches" desc="Verification > 24 hours" theme="lime" delay="5" /></div>
+               <div style={{ flex: '1 1 min-width: 0' }}><PremiumAnomalyCard icon="🗎" num={Math.round(totalKyc * 0.018)} label="Expired Docs" desc="Requires re-verification" theme="purple" delay="6" /></div>
+            </div>
+          </div>
+
+          <div className="glass-panel anim-fade-in-up anim-stagger-6" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-panel-header">
+              <div className="glass-panel-title">Portfolio Risk Exposure</div>
+              <div className="glass-panel-subtitle">Machine-assigned risk classifications across active users.</div>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+              <PremiumDonutChart data={riskDist} colors={RISK_COLORS} total={totalKyc} />
+            </div>
+            
+            <div className="chart-row-mobile" style={{ marginTop: 32, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+               <div style={{ flex: '1 1 min-width: 0' }}><PremiumAnomalyCard icon="⚠" num={kycStats.riskFlipCount} label="Risk Clashes" desc="Users with conflicting tiers" theme="amber" delay="7" /></div>
+               <div style={{ flex: '1 1 min-width: 0' }}><PremiumAnomalyCard icon="👥" num={kycStats.statusFlipCount} label="State Mismatch" desc="Status synchronization errors" theme="purple" delay="8" /></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-    </div>
+      <style>{`
+        @media (max-width: 1024px) {
+          .grid.g-3 {
+            grid-template-columns: 1fr !important;
+          }
+          .grid.g-2 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .chart-row-mobile {
+            justify-content: center !important;
+            gap: 20px !important;
+          }
+          .chart-svg-wrap {
+            margin: 0 auto !important;
+          }
+          .premium-bar-row {
+            width: 100% !important;
+          }
+          .panel-header-mobile {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          .timeline-scroll-wrap {
+            padding: 24px 16px 30px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .chart-row-mobile > div {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
+    </>
   );
 };
+
+
 
 export default IdentityIntegrity;

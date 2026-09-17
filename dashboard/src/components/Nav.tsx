@@ -142,7 +142,7 @@ export default function Nav() {
         {/* Mobile Dropdown */}
         {mobileMenuOpen && (
           <div style={{ padding: "0 16px 16px 16px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <nav style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 12 }}>
+            <nav style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
               {navLinks.map((link) => {
                 const active = location.pathname === link.href || (link.dropdown && location.pathname.startsWith(link.href));
                 return (
@@ -152,15 +152,16 @@ export default function Nav() {
                     onClick={() => setMobileMenuOpen(false)}
                     style={{
                       padding: "12px 16px",
-                      borderRadius: 12,
+                      borderRadius: 10,
                       textDecoration: "none",
-                      fontSize: 14,
-                      fontWeight: active ? 800 : 600,
-                      color: active ? "#000" : (link.isFeatured ? "#aaff00" : "#9da6b7"),
-                      background: active ? "#aaff00" : (link.isFeatured ? "rgba(180, 243, 41, 0.1)" : "rgba(255,255,255,0.03)"),
-                      border: link.isFeatured && !active ? '1px solid rgba(180, 243, 41, 0.3)' : '1px solid transparent',
+                      fontSize: 15,
+                      fontWeight: active ? 600 : 500,
+                      color: active ? "#aaff00" : (link.isFeatured ? "#aaff00" : "#9da6b7"),
+                      background: active ? "rgba(170, 255, 0, 0.1)" : (link.isFeatured ? "rgba(180, 243, 41, 0.05)" : "transparent"),
+                      border: link.isFeatured && !active ? '1px solid rgba(180, 243, 41, 0.2)' : '1px solid transparent',
                       display: "flex",
-                      alignItems: "center"
+                      alignItems: "center",
+                      transition: "all 0.2s ease"
                     }}
                   >
                     {link.isFeatured && <span style={{ marginRight: 8 }}>✨</span>}
@@ -176,16 +177,18 @@ export default function Nav() {
               style={{
                 background: "#aaff00",
                 color: "#000",
-                fontWeight: 800,
+                fontWeight: 600,
                 padding: "14px 16px",
-                borderRadius: 12,
+                borderRadius: 10,
                 textDecoration: "none",
-                fontSize: 14,
+                fontSize: 15,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                marginTop: 8
+                marginTop: 12,
+                boxShadow: "0 4px 20px rgba(170, 255, 0, 0.25)",
+                transition: "all 0.2s ease"
               }}
             >
               Go to Dashboard

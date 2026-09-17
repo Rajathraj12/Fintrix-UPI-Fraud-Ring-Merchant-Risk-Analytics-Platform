@@ -312,6 +312,7 @@ export default function AdvanceReceiptPrinter({ data = {} }) {
           align-items: center;
           position: relative;
           user-select: none;
+          box-sizing: border-box;
         }
 
         /* Top Header */
@@ -404,7 +405,8 @@ export default function AdvanceReceiptPrinter({ data = {} }) {
         }
 
         .dispenser-bezel {
-          width: 295px;
+          width: calc(100% - 16px);
+          max-width: 295px;
           height: 36px;
           background: linear-gradient(180deg, #2b3140 0%, #151822 55%, #0c0e14 100%);
           border-radius: 18px;
@@ -416,10 +418,12 @@ export default function AdvanceReceiptPrinter({ data = {} }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          box-sizing: border-box;
         }
 
         .laser-slit-track {
-          width: 250px;
+          width: 85%;
+          max-width: 250px;
           height: 5px;
           background: #000000;
           border-radius: 3px;
@@ -448,7 +452,8 @@ export default function AdvanceReceiptPrinter({ data = {} }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          width: 250px;
+          width: 85%;
+          max-width: 250px;
           margin-top: 3px;
         }
 
@@ -494,12 +499,14 @@ export default function AdvanceReceiptPrinter({ data = {} }) {
 
         /* Strict Dispenser Masking: Clips anything above the slit line */
         .dispenser-viewport-mask {
-          width: 265px;
+          width: calc(100% - 16px);
+          max-width: 265px;
           position: relative;
           margin-top: -18px; /* Tucked behind the bottom edge of the bezel */
           padding-top: 18px; /* Aligns top of slip right at the slit opening */
           overflow: hidden; /* CRITICAL: Never allows paper to show above the dispenser */
           z-index: 5;
+          box-sizing: border-box;
         }
 
         /* Carrier with Fluid Drop Animation */

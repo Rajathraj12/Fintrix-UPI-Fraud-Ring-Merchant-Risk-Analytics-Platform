@@ -152,13 +152,15 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
       </div>
 
       {/* Main Grid: Interactive Exploding SVG Donut on Left, Rich Breakdown on Right */}
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 32, alignItems: 'center' }}>
+      <div className="cat-pie-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 360px) 1fr', gap: 32, alignItems: 'center' }}>
         {/* SVG Interactive Donut Container */}
         <div 
+          className="cat-pie-svg-wrap"
           style={{ 
             position: 'relative', 
-            width: 350, 
-            height: 350, 
+            width: '100%',
+            maxWidth: 350, 
+            aspectRatio: '1 / 1',
             margin: '0 auto', 
             display: 'flex', 
             alignItems: 'center', 
@@ -167,8 +169,8 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
           onMouseLeave={handleMouseLeave}
         >
           <svg
-            width="350"
-            height="350"
+            width="100%"
+            height="100%"
             viewBox="0 0 350 350"
             style={{ overflow: 'visible', filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.4))' }}
           >
@@ -279,7 +281,7 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, paddingRight: 4 }}>
+          <div className="cat-pie-legend" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, paddingRight: 4 }}>
             {slices.map((item, i) => {
               const isHovered = hoveredIdx === i;
               const isHighRisk = item.rate > 15;
@@ -364,7 +366,9 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
               borderRadius: 10,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -386,6 +390,58 @@ export default function InteractiveCategoryPie({ data = [], onSelectCategory }) 
           </div>
         </div>
       </div>
+
+      <style>{`
+        .pills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          align-items: center;
+        }
+        .pill {
+          padding: 6px 14px;
+          border-radius: 9999px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.04);
+          color: var(--text-1);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          white-space: nowrap;
+        }
+        .pill:hover {
+          background: rgba(255,255,255,0.09);
+          color: #fff;
+        }
+        .pill.active {
+          background: var(--lime);
+          color: #000;
+          border-color: var(--lime);
+          font-weight: 700;
+          box-shadow: 0 0 12px rgba(180,243,41,0.4);
+        }
+        @media (max-width: 900px) {
+          .cat-pie-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .cat-pie-svg-wrap {
+            max-width: 280px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .cat-pie-svg-wrap {
+            max-width: 240px !important;
+          }
+          .cat-pie-legend {
+            grid-template-columns: 1fr !important;
+          }
+          .card-h {
+            flex-direction: column;
+            gap: 12px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

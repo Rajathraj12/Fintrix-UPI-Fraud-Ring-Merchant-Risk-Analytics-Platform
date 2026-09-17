@@ -1147,11 +1147,15 @@ html, body {
 @media (max-width: 1200px) {
   .hero-kpi-card { grid-template-columns: 1fr 1fr; }
   .bottom-dual-grid { grid-template-columns: 1fr; }
-  .overview-top-grid { grid-template-columns: 1fr; }
-  .receipt-mobile-hide { display: none !important; }
+  .overview-top-grid { display: flex; flex-direction: column-reverse; gap: 20px; }
+  .receipt-mobile-hide { display: flex !important; justify-content: center; width: 100%; }
   .g-kpi { grid-template-columns: repeat(3, 1fr); }
   .g-2, .g-2e, .g-main-side { grid-template-columns: 1fr; }
   .g-3 { grid-template-columns: repeat(2, 1fr); }
+
+  /* CityRiskMap: map+detail stack */
+  .city-map-donut-row { flex-direction: column !important; align-items: center !important; }
+  .city-map-donut-row .donut-chart-wrap { width: 140px !important; height: 140px !important; }
 }
 @media (max-width: 768px) {
   .app-container { padding: 12px 16px 30px 16px; }
@@ -1161,13 +1165,15 @@ html, body {
   .nav-capsule-container { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; margin-top: 4px; }
   .page-header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
   .page-header-actions { width: 100%; justify-content: space-between; }
-  .hero-kpi-card { grid-template-columns: 1fr; padding: 16px; }
+  .hero-kpi-card { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  .kpi-col { border-right: none; padding-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 16px; }
+  .kpi-col:last-child { border-bottom: none; padding-bottom: 0; }
   .g-kpi { grid-template-columns: 1fr 1fr; }
   .g-3 { grid-template-columns: 1fr; }
   .card-h { flex-direction: column; gap: 12px; }
   .risk-table { display: block; overflow-x: auto; white-space: nowrap; }
   
-  .overview-top-grid { grid-template-columns: 1fr !important; }
+  .overview-top-grid { display: flex !important; flex-direction: column-reverse !important; gap: 20px; }
   
   /* City Risk Map Specific Overrides */
   .interactive-cause-card { padding: 16px; }
@@ -1185,4 +1191,29 @@ html, body {
 @media (max-width: 480px) {
   .g-kpi { grid-template-columns: 1fr; }
   .home-grid-stats { grid-template-columns: 1fr !important; }
+  
+  /* Receipt: make it full-width on tiny screens */
+  .telemetry-card-container { max-width: 100% !important; border-radius: 14px !important; }
+  
+  /* Chart header: stack on small screens */
+  .chart-header-row { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  
+  /* Bottom dual: ensure proper padding */
+  .stream-panel-card,
+  .inspector-hud-card { padding: 16px !important; }
+
+  /* Filter pills: wrap and smaller */
+  .filter-pill-row { flex-wrap: wrap !important; gap: 4px !important; }
+  
+  /* Inspector HUD bottom bar: stack */
+  .inspector-bottom-bar { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+  .inspector-bottom-actions { width: 100%; display: flex; gap: 8px; }
+  .inspector-bottom-actions button { flex: 1; }
+  
+  /* Card overflow guard */
+  .card { overflow: hidden; }
+  
+  /* Overview AI threat vector: single column on tiny screens */
+  .threat-vector-grid { grid-template-columns: 1fr !important; }
 }
+

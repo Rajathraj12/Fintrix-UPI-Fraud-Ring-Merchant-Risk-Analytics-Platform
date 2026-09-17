@@ -828,9 +828,10 @@ export default function CityRiskMap() {
               <span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--bg-1)', padding: '4px 8px', borderRadius: 4 }}>Share by Volume</span>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: 30, justifyContent: 'space-between', padding: '10px 0' }}>
+            <div className="city-map-donut-row" style={{ display: 'flex', alignItems: 'center', gap: 30, justifyContent: 'space-between', padding: '10px 0', flexWrap: 'wrap' }}>
               {/* Interactive SVG Donut Chart */}
               <div 
+                className="donut-chart-wrap"
                 style={{ position: 'relative', width: 170, height: 170, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 onMouseLeave={() => setHoveredCatIdx(null)}
               >
@@ -989,7 +990,7 @@ export default function CityRiskMap() {
           Click any state card to focus and highlight its boundary on the map
         </div>
 
-        <div className="grid g-3" style={{ gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: 16 }}>
           {Object.values(stateMetrics)
             .sort((a, b) => b.disputeRate - a.disputeRate)
             .map((st) => {

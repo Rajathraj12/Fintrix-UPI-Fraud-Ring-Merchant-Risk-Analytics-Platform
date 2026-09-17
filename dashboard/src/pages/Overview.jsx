@@ -2,8 +2,8 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import AdvanceReceiptPrinter from '../components/AdvanceReceiptPrinter';
 
-const fmt = (n) => n >= 1e7 ? `${(n/1e7).toFixed(2)}Cr` : n >= 1e5 ? `${(n/1e5).toFixed(2)}L` : n >= 1e3 ? `${(n/1e3).toFixed(1)}K` : String(Math.round(n));
-const pct = (n, d) => d === 0 ? '0.0%' : `${((n/d)*100).toFixed(1)}%`;
+const fmt = (n) => n >= 1e7 ? `${(n / 1e7).toFixed(2)}Cr` : n >= 1e5 ? `${(n / 1e5).toFixed(2)}L` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(Math.round(n));
+const pct = (n, d) => d === 0 ? '0.0%' : `${((n / d) * 100).toFixed(1)}%`;
 const fmtINR = (n) => `₹${fmt(n)}`;
 
 // Interactive Time Series Chart with Marked Axes & Lime Styling
@@ -553,151 +553,149 @@ export default function Overview({ onNavigate }) {
       {/* Top 2-Column Grid: Left (KPIs & Activity Chart) + Right (Receipt Slip Alone) */}
       <div className="overview-top-grid">
         {/* Left Column: KPIs & Daily Velocity Timeline */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%' }}>
           {/* 1. Clear & Contextual Grand Hero KPI Container */}
-          <div className="hero-kpi-card">
-            {/* Col 1: Total Disputed & Resolution Backlog */}
-            <div className="kpi-col">
-              <div>
-                <div className="kpi-title-small">Total Disputed Volume</div>
-                <div className="kpi-big-value" style={{ color: '#ffffff' }}>
-                  {fmtINR(disputedAmt)}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
-                  <span><b style={{ color: '#d97706' }}>●</b> Open: {fmtINR(openCbAmt)} ({openCb.length})</span>
-                  <span><b style={{ color: '#16a34a' }}>●</b> Closed: {fmtINR(closedCbAmt)}</span>
-                </div>
-                {/* Visual Ratio Bar */}
-                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
-                  <div style={{ width: '53.3%', background: '#d97706' }} title="53.3% Open" />
-                  <div style={{ width: '30.9%', background: '#16a34a' }} title="30.9% Closed" />
-                  <div style={{ width: '15.8%', background: '#dc2626' }} title="15.8% Rejected" />
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
-                  2,800 Total Claims across 6 Intake Channels
-                </div>
-              </div>
-            </div>
-
-            {/* Col 2: Total Clean Processed Volume */}
-            <div className="kpi-col">
-              <div>
-                <div className="kpi-title-small">Processed UPI Volume</div>
-                <div className="kpi-big-value">
-                  {fmtINR(totalVol)}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                  <b style={{ color: '#ffffff' }}>{totalTxns.toLocaleString()}</b> Transactions · <b style={{ color: 'var(--accent)' }}>{successRate}</b> Success
-                </div>
-                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden', marginTop: 2 }}>
-                  <div style={{ width: successRate, height: '100%', background: 'var(--accent)' }} />
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
-                  Avg Ticket Size: <b style={{ color: '#fff' }}>₹{Math.round(avgTicket).toLocaleString()}</b>
-                </div>
-              </div>
-            </div>
-
-            {/* Col 3: Merchant Ecosystem Breakdown */}
-            <div className="kpi-col">
-              <div>
-                <div className="kpi-title-small">Merchant Ecosystem</div>
-                <div className="kpi-big-value">
-                  {activeMerchants.toLocaleString()} <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>/ {merchants.length.toLocaleString()}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                  Active Ratio: <b style={{ color: 'var(--accent)' }}>81.1%</b> · Flagged: <b style={{ color: '#ef4444' }}>{suspendedMerchants}</b>
-                </div>
-                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
-                  <div style={{ width: '81.1%', background: 'var(--accent)' }} />
-                  <div style={{ width: '9.9%', background: '#64748b' }} />
-                  <div style={{ width: '9.0%', background: '#ef4444' }} />
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
-                  Avg Settlement Response: <b style={{ color: '#fff' }}>2.4 days</b>
-                </div>
-              </div>
-            </div>
-
-            {/* Col 4: Fintrix AI Fraud & Risk Defense (Replaced mock Payout box) */}
-            <div className="hero-payout-box">
-              <div className="payout-header">
+          <div className="mobile-slider-wrap">
+            <div className="mobile-slider-content hero-kpi-card" style={{ height: '100%' }}>
+              {/* Col 1: Total Disputed & Resolution Backlog */}
+              <div className="kpi-col">
                 <div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  <div className="kpi-title-small">Total Disputed Volume</div>
+                  <div className="kpi-big-value" style={{ color: '#ffffff' }}>
+                    {fmtINR(disputedAmt)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-2)' }}>
+                    <span><b style={{ color: '#d97706' }}>●</b> Open: {fmtINR(openCbAmt)} ({openCb.length})</span>
+                    <span><b style={{ color: '#16a34a' }}>●</b> Closed: {fmtINR(closedCbAmt)}</span>
+                  </div>
+                  {/* Visual Ratio Bar */}
+                  <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
+                    <div style={{ width: '53.3%', background: '#d97706' }} title="53.3% Open" />
+                    <div style={{ width: '30.9%', background: '#16a34a' }} title="30.9% Closed" />
+                    <div style={{ width: '15.8%', background: '#dc2626' }} title="15.8% Rejected" />
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                    2,800 Total Claims across 6 Intake Channels
+                  </div>
+                </div>
+              </div>
+
+              {/* Col 2: Total Clean Processed Volume */}
+              <div className="kpi-col">
+                <div>
+                  <div className="kpi-title-small">Processed UPI Volume</div>
+                  <div className="kpi-big-value">
+                    {fmtINR(totalVol)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+                    <b style={{ color: '#ffffff' }}>{totalTxns.toLocaleString()}</b> Transactions · <b style={{ color: 'var(--accent)' }}>{successRate}</b> Success
+                  </div>
+                  <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden', marginTop: 2 }}>
+                    <div style={{ width: successRate, height: '100%', background: 'var(--accent)' }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                    Avg Ticket Size: <b style={{ color: '#fff' }}>₹{Math.round(avgTicket).toLocaleString()}</b>
+                  </div>
+                </div>
+              </div>
+
+              {/* Col 3: Active Merchant Entities & Deep AI Assessment */}
+              <div className="kpi-col">
+                <div>
+                  <div className="kpi-title-small">Merchant Ecosystem</div>
+                  <div className="kpi-big-value">
+                    {activeMerchants.toLocaleString()} <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>/ {merchants.length.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+                    Active Ratio: <b style={{ color: 'var(--accent)' }}>81.1%</b> · Flagged: <b style={{ color: 'var(--red)' }}>560</b>
+                  </div>
+                  <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, display: 'flex', overflow: 'hidden', marginTop: 2 }}>
+                    <div style={{ width: '81.1%', background: 'var(--accent)' }} />
+                    <div style={{ width: '18.9%', background: 'var(--red)' }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)', marginTop: 2 }}>
+                    Avg Settlement Response: <b style={{ color: '#fff' }}>2.4 days</b>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 20, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-strong)', padding: 12, borderRadius: 12 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                     Fintrix AI Defense
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-display)', marginTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-display)', marginBottom: 8 }}>
                     +₹1.85 Cr
                   </div>
+
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <div className="payout-item-pill">
+                      <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>Flagged</span>
+                      <span style={{ color: 'var(--red)' }}>₹4.12 Cr</span>
+                    </div>
+                    <div className="payout-item-pill" style={{ background: 'var(--accent)', border: '1px solid var(--accent)' }}>
+                      <span style={{ fontSize: 8.5, color: '#000000', fontWeight: 800 }}>Dispute Rate</span>
+                      <span style={{ color: '#000000', fontWeight: 800 }}>14.0%</span>
+                    </div>
+                    <div className="payout-item-pill">
+                      <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>KYC Pass</span>
+                      <span style={{ color: '#3b82f6' }}>94.2%</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => onNavigate && onNavigate('dispute')}
+                    style={{
+                      width: '100%',
+                      background: 'var(--accent)',
+                      color: '#000000',
+                      border: 'none',
+                      padding: '8px 0',
+                      borderRadius: 'var(--radius-pill)',
+                      fontWeight: 800,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Inspect Threat Matrix →
+                  </button>
                 </div>
               </div>
-
-              <div className="payout-pills-row">
-                <div className="payout-item-pill">
-                  <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>Flagged</span>
-                  <span style={{ color: '#ef4444' }}>₹4.12 Cr</span>
-                </div>
-                <div className="payout-item-pill active">
-                  <span style={{ fontSize: 8.5 }}>Dispute Rate</span>
-                  <span>{cbRate}</span>
-                </div>
-                <div className="payout-item-pill">
-                  <span style={{ fontSize: 8.5, color: 'var(--text-2)' }}>KYC Pass</span>
-                  <span style={{ color: '#3b82f6' }}>94.2%</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => onNavigate && onNavigate('dispute')}
-                style={{
-                  width: '100%',
-                  background: 'var(--accent)',
-                  color: '#000000',
-                  border: 'none',
-                  padding: '8px 0',
-                  borderRadius: 'var(--radius-pill)',
-                  fontWeight: 800,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                Inspect Threat Matrix →
-              </button>
             </div>
           </div>
 
           {/* 2. Interactive Transaction Activity Chart */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#fff' }}>
-                  Daily Transaction Velocity & Disputes
+          <div className="mobile-slider-wrap">
+            <div className="mobile-slider-content card">
+              <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#fff' }}>
+                    Daily Transaction Velocity & Disputes
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
+                    Interactive timeline with marked axes, hover crosshairs, and live feed telemetry.
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
-                  Interactive timeline with marked axes, hover crosshairs, and live feed telemetry.
-                </div>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)',
+                  padding: '3px 10px',
+                  borderRadius: 'var(--radius-pill)',
+                  border: '1px solid rgba(180, 243, 41, 0.4)'
+                }}>
+                  ● LIVE FEED
+                </span>
               </div>
-              <span style={{
-                fontSize: 10,
-                fontWeight: 800,
-                background: 'var(--accent-soft)',
-                color: 'var(--accent)',
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-pill)',
-                border: '1px solid rgba(180, 243, 41, 0.4)'
-              }}>
-                ● LIVE FEED
-              </span>
-            </div>
 
-            <InteractiveTimeSeriesChart dataPoints={dailyTimeSeriesData} />
+              <InteractiveTimeSeriesChart dataPoints={dailyTimeSeriesData} />
+            </div>
           </div>
         </div>
 
@@ -864,7 +862,7 @@ export default function Overview({ onNavigate }) {
         {/* Right Panel: AI Forensic Case Inspector HUD */}
         <div className="inspector-hud-card" style={{ gap: 14 }}>
           {/* 1. Header: Complaint ID & Security Status */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr', gap: 12, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
             <div>
               <div style={{ fontSize: 9.5, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
                 CASE IDENTIFIER
@@ -947,7 +945,7 @@ export default function Overview({ onNavigate }) {
             <div style={{ fontSize: 9, color: 'var(--text-2)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.5px', marginBottom: 8 }}>
               CASE AUDIT & FORENSIC LIFECYCLE
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, position: 'relative' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, position: 'relative' }}>
               {[
                 { title: 'Intake Triaged', desc: `${activeDispute.channel} Log`, status: 'done' },
                 { title: 'NLP Extraction', desc: 'Reason Parsed', status: 'done' },
@@ -983,7 +981,7 @@ export default function Overview({ onNavigate }) {
           </div>
 
           {/* 4. AI Threat Vector & Signal Radar Breakdown (fills dead space cleanly) */}
-          <div style={{
+          <div className="threat-vector-grid" style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 8,
@@ -1034,7 +1032,7 @@ export default function Overview({ onNavigate }) {
           </div>
 
           {/* 5. Detail Forensic 3-Box Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
             <div style={{ background: 'var(--card-inner)', padding: '8px 10px', borderRadius: 10, border: '1px solid var(--border)' }}>
               <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
                 94.2% <span style={{ fontSize: 9, color: 'var(--accent)' }}>↗</span>
@@ -1058,7 +1056,7 @@ export default function Overview({ onNavigate }) {
           </div>
 
           {/* 6. Bottom Total & Actions Bar */}
-          <div style={{
+          <div className="inspector-bottom-bar" style={{
             background: 'rgba(0,0,0,0.35)',
             borderRadius: 12,
             padding: '10px 14px',
@@ -1114,6 +1112,26 @@ export default function Overview({ onNavigate }) {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-slider-wrap {
+            overflow-x: auto;
+            width: calc(100vw - 32px);
+            margin: 0 -16px;
+            padding: 0 16px 12px 16px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* Internet Explorer 10+ */
+          }
+          .mobile-slider-wrap::-webkit-scrollbar { 
+            display: none; /* WebKit */
+          }
+          .mobile-slider-content {
+            min-width: 600px; /* Ensure desktop layout triggers slider */
+          }
+        }
+      `}</style>
     </div>
   );
 }

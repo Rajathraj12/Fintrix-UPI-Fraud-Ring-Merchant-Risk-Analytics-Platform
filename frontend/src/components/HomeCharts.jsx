@@ -42,7 +42,7 @@ export default function HomeCharts({ txData, merchantData }) {
 
   return (
     <section ref={chartRef} style={{ padding: "0", maxWidth: 1280, margin: "0 auto", width: "100%" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 1, background: "#111" }}>
+      <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-[1px] bg-[#111]">
         
         {/* Transaction velocity */}
         <div style={{ background: "#0a0a0a", padding: "28px" }}>
