@@ -920,7 +920,7 @@ html, body {
   padding: 24px 28px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr) 1.25fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   position: relative;
 }
