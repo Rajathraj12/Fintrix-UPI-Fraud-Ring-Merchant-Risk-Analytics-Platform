@@ -21,7 +21,7 @@ FINTRIX_LLM_MODE = os.getenv("FINTRIX_LLM_MODE", "live").strip().lower()
 
 # Usage & Cost Guard Settings
 MAX_AGENT_REQUESTS_PER_SESSION = int(os.getenv("MAX_AGENT_REQUESTS_PER_SESSION", "50"))
-MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "384"))
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "1500"))
 MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", "4000"))
 
 # App Settings

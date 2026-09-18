@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../../services/fintrixApi";
-import { BarChart, Bar, LineChart, Line, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, ScatterChart, Scatter, PieChart, Pie, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 // Lightweight markdown renderer: bold, bullet points, line breaks
 function renderMarkdown(text) {
@@ -54,6 +54,91 @@ function renderInline(text) {
   });
 }
 
+function ChartRenderer({ chart }) {
+  const [chartType, setChartType] = useState(chart?.type || 'bar');
+
+  if (!chart || !Array.isArray(chart.data)) return null;
+
+  const handleToggle = () => {
+    setChartType(prev => prev === 'bar' ? 'pie' : 'bar');
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#aaff00', '#ff5271', '#a78bfa', '#3ddc97'];
+
+  return (
+    <div style={{ marginTop: 16, width: "100%", background: "#111", borderRadius: 8, padding: 12, border: "1px solid #2a2d35", display: "flex", flexDirection: "column" }}>
+      {(chart.type === 'bar' || chart.type === 'pie' || chartType === 'bar' || chartType === 'pie') && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <button 
+            onClick={handleToggle}
+            style={{ 
+              background: "#1e2025", border: "1px solid #333", color: "#bbb", 
+              padding: "4px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6
+            }}
+          >
+            {chartType === 'bar' ? (
+              <><span style={{fontSize: 14}}>🥧</span> Show Pie Chart</>
+            ) : (
+              <><span style={{fontSize: 14}}>📊</span> Show Bar Graph</>
+            )}
+          </button>
+        </div>
+      )}
+
+      <div style={{ height: 250, width: "100%" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === "bar" ? (
+            <BarChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+              <XAxis dataKey={chart.x_key || "name"} stroke="#777" fontSize={10} tickLine={false} />
+              <YAxis stroke="#777" fontSize={10} tickLine={false} axisLine={false} />
+              <Tooltip cursor={{fill: '#222'}} contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
+              <Bar dataKey={chart.y_key || "value"} fill={chart.color || "#aaff00"} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          ) : chartType === "pie" ? (
+            <PieChart>
+              <Pie
+                data={chart.data}
+                dataKey={chart.y_key || "value"}
+                nameKey={chart.x_key || "name"}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#8884d8"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                labelLine={false}
+              >
+                {chart.data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
+              <Legend wrapperStyle={{ fontSize: 12, color: "#bbb" }} />
+            </PieChart>
+          ) : chartType === "line" ? (
+            <LineChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+              <XAxis dataKey={chart.x_key || "name"} stroke="#777" fontSize={10} tickLine={false} />
+              <YAxis stroke="#777" fontSize={10} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
+              <Line type="monotone" dataKey={chart.y_key || "value"} stroke={chart.color || "#00e5ff"} strokeWidth={3} dot={{ r: 4, fill: '#111', strokeWidth: 2 }} />
+            </LineChart>
+          ) : chartType === "scatter" ? (
+            <ScatterChart>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey={chart.x_key || "x"} type="number" stroke="#777" fontSize={10} />
+              <YAxis dataKey={chart.y_key || "y"} type="number" stroke="#777" fontSize={10} />
+              <Tooltip contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
+              <Scatter data={chart.data} fill={chart.color || "#ff6b35"} />
+            </ScatterChart>
+          ) : null}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export default function FintrixAIChat({ onNavigate = null }) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +148,7 @@ export default function FintrixAIChat({ onNavigate = null }) {
   const [messages, setMessages] = useState([
     {
       role: "bot",
-      text: "Hello! I'm Fintrix's fraud intelligence agent.\n\nI can answer questions about UPI fraud rings, synthetic identity detection, merchant chargeback analytics, and our ETL data pipeline.\n\nTry one of the suggested queries below or ask your own question.",
+      text: "Hello! I'm Antigravity's fraud intelligence agent.\n\nI can answer questions about UPI fraud rings, synthetic identity detection, merchant chargeback analytics, and our ETL data pipeline.\n\nTry one of the suggested queries below or ask your own question.",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       showSuggestions: true
     }
@@ -111,7 +196,7 @@ export default function FintrixAIChat({ onNavigate = null }) {
       console.error(error);
       setMessages(prev => [...prev, {
         role: "bot",
-        text: "Error communicating with Fintrix AI backend.",
+        text: "Error communicating with Antigravity backend.",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     } finally {
@@ -136,7 +221,7 @@ export default function FintrixAIChat({ onNavigate = null }) {
                 <div style={{ position: "absolute", bottom: -2, right: -2, width: 10, height: 10, background: "#aaff00", borderRadius: "50%", border: "2px solid #0a0c10" }} />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 2 }}>Fintrix AI Agent</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 2 }}>Antigravity Agent</div>
                 <div style={{ fontSize: 12, color: "#aaff00", display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#aaff00" }} />
                   Online • UPI Fraud Intelligence
@@ -168,36 +253,8 @@ export default function FintrixAIChat({ onNavigate = null }) {
                         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#ddd" }}>{msg.text}</p>
                       )}
                       
-                      {msg.chart && msg.chart.type && Array.isArray(msg.chart.data) && (
-                        <div style={{ marginTop: 16, height: 250, width: "100%", background: "#111", borderRadius: 8, padding: 12, border: "1px solid #2a2d35" }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            {msg.chart.type === "bar" ? (
-                              <BarChart data={msg.chart.data}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey={msg.chart.x_key || "name"} stroke="#777" fontSize={10} tickLine={false} />
-                                <YAxis stroke="#777" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{fill: '#222'}} contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
-                                <Bar dataKey={msg.chart.y_key || "value"} fill={msg.chart.color || "#aaff00"} radius={[4, 4, 0, 0]} />
-                              </BarChart>
-                            ) : msg.chart.type === "line" ? (
-                              <LineChart data={msg.chart.data}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey={msg.chart.x_key || "name"} stroke="#777" fontSize={10} tickLine={false} />
-                                <YAxis stroke="#777" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
-                                <Line type="monotone" dataKey={msg.chart.y_key || "value"} stroke={msg.chart.color || "#00e5ff"} strokeWidth={3} dot={{ r: 4, fill: '#111', strokeWidth: 2 }} />
-                              </LineChart>
-                            ) : msg.chart.type === "scatter" ? (
-                              <ScatterChart>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                <XAxis dataKey={msg.chart.x_key || "x"} type="number" stroke="#777" fontSize={10} />
-                                <YAxis dataKey={msg.chart.y_key || "y"} type="number" stroke="#777" fontSize={10} />
-                                <Tooltip contentStyle={{background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 12}} />
-                                <Scatter data={msg.chart.data} fill={msg.chart.color || "#ff6b35"} />
-                              </ScatterChart>
-                            ) : null}
-                          </ResponsiveContainer>
-                        </div>
+                      {msg.chart && Array.isArray(msg.chart.data) && (
+                        <ChartRenderer chart={msg.chart} />
                       )}
                     </div>
 

@@ -1,6 +1,8 @@
 import logging
 import requests
 import re
+import os
+import re
 from typing import List, Optional
 from .config import (
     OLLAMA_MODEL,
@@ -68,39 +70,101 @@ Example: TOOL_CALL: get_merchant_profile(MCH1234)
 After receiving the tool result, provide your analysis to the user."""
 
 
-def call_ollama(messages: list, model: str = None) -> str:
-    """Call Ollama's local API with a chat completion request."""
-    model = model or OLLAMA_MODEL
-    url = f"{OLLAMA_BASE_URL}/api/chat"
+_keys_env = os.getenv("GEMINI_API_KEYS", "")
+GEMINI_API_KEYS = [k.strip() for k in _keys_env.split(",") if k.strip()]
 
+current_gemini_key_idx = 0
+
+def call_gemini(messages: list, model: str = "gemini-3.6-flash") -> str:
+    global current_gemini_key_idx
+    
+    # Convert Ollama messages format to Gemini format
+    gemini_messages = []
+    system_instruction = None
+    for msg in messages:
+        if msg["role"] == "system":
+            system_instruction = {"parts": [{"text": msg["content"]}]}
+        elif msg["role"] == "user":
+            gemini_messages.append({"role": "user", "parts": [{"text": msg["content"]}]})
+        elif msg["role"] == "assistant":
+            gemini_messages.append({"role": "model", "parts": [{"text": msg["content"]}]})
+            
     payload = {
-        "model": model,
-        "messages": messages,
-        "stream": False,
-        "options": {
-            "num_predict": MAX_OUTPUT_TOKENS,
-            "temperature": 0.1,  # Low temp = faster, more deterministic output
+        "contents": gemini_messages,
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": MAX_OUTPUT_TOKENS,
         }
     }
+    if system_instruction:
+        payload["systemInstruction"] = system_instruction
+        
+    for _ in range(len(GEMINI_API_KEYS)):
+        api_key = GEMINI_API_KEYS[current_gemini_key_idx]
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        
+        try:
+            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+            if resp.status_code == 429: # Rate limit
+                logger.warning(f"Rate limit hit for Gemini key index {current_gemini_key_idx}. Rotating...")
+                current_gemini_key_idx = (current_gemini_key_idx + 1) % len(GEMINI_API_KEYS)
+                continue
+            
+            resp.raise_for_status()
+            data = resp.json()
+            if "candidates" in data and len(data["candidates"]) > 0:
+                parts = data["candidates"][0].get("content", {}).get("parts", [])
+                if parts:
+                    return parts[0].get("text", "").strip()
+            return ""
+        except requests.exceptions.RequestException as e:
+            try:
+                status_code = resp.status_code
+            except NameError:
+                status_code = None
+                
+            if status_code == 429:
+                logger.warning(f"Rate limit hit for Gemini key index {current_gemini_key_idx}. Rotating...")
+                current_gemini_key_idx = (current_gemini_key_idx + 1) % len(GEMINI_API_KEYS)
+                continue
+            logger.error(f"Gemini API request failed: {e}")
+            raise RuntimeError(f"Gemini API error: {e}")
+            
+    raise RuntimeError("All Gemini API keys exhausted or rate limited.")
 
-    headers = {
-        "ngrok-skip-browser-warning": "69420"
-    }
-
-    try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=300)  # 5-min timeout for local LLM
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("message", {}).get("content", "").strip()
-    except requests.exceptions.ConnectionError:
-        raise ConnectionError(
-            f"Cannot connect to Ollama at {OLLAMA_BASE_URL}. "
-            "Make sure Ollama is running (run 'ollama serve' in a terminal)."
-        )
-    except requests.exceptions.Timeout:
-        raise TimeoutError("Ollama request timed out after 300 seconds.")
-    except Exception as e:
-        raise RuntimeError(f"Ollama API error: {e}")
+# def call_ollama(messages: list, model: str = None) -> str:
+#     """Call Ollama's local API with a chat completion request."""
+#     model = model or OLLAMA_MODEL
+#     url = f"{OLLAMA_BASE_URL}/api/chat"
+# 
+#     payload = {
+#         "model": model,
+#         "messages": messages,
+#         "stream": False,
+#         "options": {
+#             "num_predict": MAX_OUTPUT_TOKENS,
+#             "temperature": 0.1,  # Low temp = faster, more deterministic output
+#         }
+#     }
+# 
+#     headers = {
+#         "ngrok-skip-browser-warning": "69420"
+#     }
+# 
+#     try:
+#         resp = requests.post(url, json=payload, headers=headers, timeout=300)  # 5-min timeout for local LLM
+#         resp.raise_for_status()
+#         data = resp.json()
+#         return data.get("message", {}).get("content", "").strip()
+#     except requests.exceptions.ConnectionError:
+#         raise ConnectionError(
+#             f"Cannot connect to Ollama at {OLLAMA_BASE_URL}. "
+#             "Make sure Ollama is running (run 'ollama serve' in a terminal)."
+#         )
+#     except requests.exceptions.Timeout:
+#         raise TimeoutError("Ollama request timed out after 300 seconds.")
+#     except Exception as e:
+#         raise RuntimeError(f"Ollama API error: {e}")
 
 
 def parse_tool_call(response: str):
@@ -159,12 +223,12 @@ def execute_tool(tool_name: str, args_str: str) -> str:
 
 class FintrixAgent:
     """
-    Fintrix AI Agent powered by Ollama (Llama 3.2).
+    Fintrix AI Agent powered by Gemini.
     Supports tool calling through a simple text-based protocol.
     """
 
     def __init__(self, model: str = None):
-        self.model = model or OLLAMA_MODEL
+        self.model = model or "gemini-3.6-flash"
         self.tools_used: List[str] = []
 
     def run(self, prompt: str) -> str:
@@ -178,7 +242,8 @@ class FintrixAgent:
 
         # Allow up to 3 tool-calling rounds
         for _ in range(3):
-            response = call_ollama(messages, self.model)
+            # response = call_ollama(messages, self.model)
+            response = call_gemini(messages, self.model)
 
             tool_name, args_str = parse_tool_call(response)
             if tool_name is None:
@@ -203,12 +268,13 @@ class FintrixAgent:
             })
 
         # If we exhausted tool rounds, get a final response
-        response = call_ollama(messages, self.model)
+        # response = call_ollama(messages, self.model)
+        response = call_gemini(messages, self.model)
         return response
 
 
 def create_fintrix_agent(model: str = None) -> FintrixAgent:
-    """Factory to create a Fintrix AI Agent backed by Ollama."""
+    """Factory to create a Fintrix AI Agent backed by Gemini."""
     return FintrixAgent(model=model)
 
 
@@ -241,11 +307,11 @@ def run_guarded_agent(
         return str(result)
 
     except ConnectionError as e:
-        logger.error(f"Ollama connection error: {e}")
+        logger.error(f"Connection error: {e}")
         return f"Error: {e}"
     except TimeoutError as e:
-        logger.error(f"Ollama timeout: {e}")
-        return "Error: Request timed out. Ollama may be processing a large request."
+        logger.error(f"Timeout error: {e}")
+        return "Error: Request timed out."
     except Exception as e:
         active_tracker.record_usage(input_tokens=0, output_tokens=0)
         err_msg = str(e)
