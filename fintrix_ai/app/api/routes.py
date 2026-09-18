@@ -37,12 +37,16 @@ def extract_chart_from_answer(answer_text):
         parts = answer_text.split("```json")
         if len(parts) > 1:
             json_str = parts[-1].split("```")[0].strip()
+            # Always strip the JSON block from the text shown to the user
+            answer_text = parts[0].strip()
             try:
+                # Try to parse the JSON, but it might be truncated (e.g. by token limits)
                 parsed = json.loads(json_str)
                 if "chart" in parsed:
                     chart_data = parsed["chart"]
-                    answer_text = parts[0].strip()
             except json.JSONDecodeError:
+                # If JSON parsing fails (often due to truncation), we just ignore the chart
+                # but we've already successfully removed the ugly raw json from answer_text
                 pass
     return answer_text, chart_data
 
